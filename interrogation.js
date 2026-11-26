@@ -1,4 +1,4 @@
-// Befragung und Vernehmungsprotokoll
+// Gespräch mit der Person und Vernehmungsprotokoll
 
 const QUESTIONS=[
   ["dest","Wohin fahren Sie?"],
@@ -8,13 +8,13 @@ const QUESTIONS=[
   ["stay","Wie lange bleiben Sie drüben?"]
 ];
 
-function openAsk(){
-  if(S.busy) return;
-  toggleCheck(false); renderAsk(); $("askScene").classList.add("show");
+function toggleAsk(force){
+  const m=$("askMenu"), show=typeof force==="boolean"?force:!m.classList.contains("show");
+  if(show){renderAskMenu();setHint("Tippe die Person erneut an, um das Gespräch zu beenden.")}
+  m.classList.toggle("show",show);
 }
-function renderAsk(){
-  $("askList").innerHTML=QUESTIONS.map(([k,q])=>`<button class="qbtn" data-q="${k}" ${S.asked[k]?"disabled":""}>${q}</button>`).join("");
-  $("askAnswer").textContent=S.lastAnswer||"Wähle eine Frage. Jede Frage kostet "+ASK_COST+" Minuten.";
+function renderAskMenu(){
+  $("askMenu").innerHTML=QUESTIONS.map(([k,q])=>`<button class="chip" data-q="${k}" ${S.asked[k]?"disabled":""}>${q}</button>`).join("");
 }
 function answerText(k){
   const t=S.cur, a=t.answers, pre=a.nervous?"Äh… ":"";
@@ -27,9 +27,8 @@ function answerText(k){
 function ask(k){
   if(S.asked[k]) return;
   S.asked[k]=true; S.min+=ASK_COST;
-  S.lastAnswer="„"+answerText(k)+"“";
-  $("speech").textContent=S.lastAnswer;
-  renderProtocol(); updateHUD(); renderAsk();
+  $("speech").textContent="„"+answerText(k)+"“";
+  renderProtocol(); updateHUD(); renderAskMenu();
 }
 function renderProtocol(){
   const a=S.cur.answers, rows=[];
@@ -46,5 +45,5 @@ function renderProtocol(){
   markSelected();
 }
 
-$("askList").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b) ask(b.dataset.q)});
-$("bAskDone").onclick=()=>$("askScene").classList.remove("show");
+$("traveler").addEventListener("click",()=>{if(S.checkMode||S.busy) return; toggleAsk()});
+$("askMenu").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b&&!S.busy) ask(b.dataset.q)});

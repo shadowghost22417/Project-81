@@ -1,23 +1,34 @@
 // Nahansicht verschlossener Stellen: Messer, Schraubenzieher, Brecheisen
 const CUT_W=600, CUT_H=340;
+const HINT_TEXT={knife:"Eine Naht sieht frisch genäht aus. ",screw:"Die Schrauben haben frische Kratzer. ",bar:"Eine Stelle glänzt wie frisch lackiert. "};
+const HOWTO={knife:"Setz das Messer an und zieh eine gerade Linie.",screw:"Halte jede Schraube gedrückt, bis sie herauskommt.",bar:"Ziehe das Brecheisen dreimal kräftig nach unten."};
 
 function closeHint(c){
   const t=S.cur;
   if(c.hit) return t.contraband.hint?t.contraband.pos:null;
   return t.falseSpot===c.id?t.falseHintPos:null;
 }
-const lootHTML=()=>`<div class="loot">${S.cur.contraband.item}</div>`;
-
-function renderCloseup(v){
+function closeMsg(c){
+  return (closeHint(c)?HINT_TEXT[c.tool]:"")+
+    (c.using===c.tool?HOWTO[c.tool]:"Hier brauchst du "+TOOL_ACC[c.tool]+". Zieh es aus dem Werkzeugkasten hierher.");
+}
+function renderCloseup(p){
   const c=S.close; c.built=true;
-  $("searchTitle").textContent=c.name;
-  if(c.tool==="knife") buildKnife(v,c);
-  else if(c.tool==="screw") buildScrew(v,c);
-  else buildBar(v,c);
+  p.innerHTML=`<div class="closeHead"><button class="door" id="bCloseBack">‹ Zurück</button><b>${c.name}</b></div>
+    <div class="closeup" id="closeBox" data-closebox></div>`;
+  $("bCloseBack").onclick=()=>{finishClose();S.close=null;renderOutside()};
+  const box=$("closeBox");
+  if(c.tool==="knife") buildKnife(box,c); else if(c.tool==="screw") buildScrew(box,c); else buildBar(box,c);
+  setSearchMsg(closeMsg(c));
+}
+function useOnClose(tool){
+  const c=S.close;
+  if(tool===c.tool){c.using=tool;setSearchMsg(closeMsg(c))}
+  else setSearchMsg("Damit kommst du hier nicht weiter. Hier brauchst du "+TOOL_ACC[c.tool]+".");
 }
 function markFound(c){
   S.spotState[c.id]="hit"; S.found=S.cur.contraband.desc;
-  setSearchMsg("Gefunden: "+S.found+"! Du kannst jetzt festnehmen.");
+  setSearchMsg("Gefunden: "+S.found+"! Damit kannst du festnehmen.");
   updateHUD();
 }
 function openPanel(c,damage){
@@ -28,7 +39,6 @@ function openPanel(c,damage){
   else{S.spotNote[c.id]="abgeschraubt, leer";setSearchMsg(c.name+": nichts Verdächtiges.")}
   updateHUD();
 }
-// Wird beim Verlassen der Nahansicht aufgerufen
 function finishClose(){
   const c=S.close; if(!c) return;
   if(c.tool==="knife"&&c.cutLen>0){
@@ -42,57 +52,115 @@ function finishClose(){
   updateHUD();
 }
 
-// ---------- Messer: freies Schneiden ----------
-function paintFabric(ctx,color,hint){
-  ctx.fillStyle=color; ctx.fillRect(0,0,CUT_W,CUT_H);
-  ctx.strokeStyle="rgba(255,255,255,.12)"; ctx.lineWidth=3;
-  for(let x=75;x<CUT_W;x+=110){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,CUT_H);ctx.stroke()}
-  for(let i=0;i<1400;i++){ctx.fillStyle=`rgba(0,0,0,${Math.random()*.1})`;ctx.fillRect(Math.random()*CUT_W,Math.random()*CUT_H,2,2)}
-  if(hint){ // frisch genähte Naht in hellerem Garn
-    const x=hint.x*CUT_W, y=hint.y*CUT_H;
-    ctx.strokeStyle="#e0c870"; ctx.lineWidth=2; ctx.setLineDash([7,5]);
-    ctx.beginPath(); ctx.moveTo(x-75,y-6); ctx.lineTo(x+75,y+4); ctx.stroke(); ctx.setLineDash([]);
+// ---------- Messer: gerader Schnitt, Stoff reißt auf ----------
+function makeFabric(color,hint){
+  const o=document.createElement("canvas"); o.width=CUT_W; o.height=CUT_H;
+  const x=o.getContext("2d");
+  x.fillStyle=color; x.fillRect(0,0,CUT_W,CUT_H);
+  x.strokeStyle="rgba(255,255,255,.12)"; x.lineWidth=3;
+  for(let i=75;i<CUT_W;i+=110){x.beginPath();x.moveTo(i,0);x.lineTo(i,CUT_H);x.stroke()}
+  for(let i=0;i<1400;i++){x.fillStyle=`rgba(0,0,0,${Math.random()*.1})`;x.fillRect(Math.random()*CUT_W,Math.random()*CUT_H,2,2)}
+  if(hint){
+    const px=hint.x*CUT_W, py=hint.y*CUT_H;
+    x.strokeStyle="#e0c870"; x.lineWidth=2; x.setLineDash([7,5]);
+    x.beginPath(); x.moveTo(px-75,py-6); x.lineTo(px+75,py+4); x.stroke(); x.setLineDash([]);
+  }
+  return o;
+}
+function makeFoam(item,pos){
+  const o=document.createElement("canvas"); o.width=CUT_W; o.height=CUT_H;
+  const x=o.getContext("2d");
+  x.fillStyle="#dcc98a"; x.fillRect(0,0,CUT_W,CUT_H);
+  for(let i=0;i<500;i++){x.fillStyle=`rgba(120,90,30,${Math.random()*.25})`;x.beginPath();x.arc(Math.random()*CUT_W,Math.random()*CUT_H,1+Math.random()*3,0,7);x.fill()}
+  let rect=null;
+  if(item){
+    x.font="bold 15px Courier New, monospace";
+    const w=Math.min(300,x.measureText(item).width+24), h=56, px=pos.x*CUT_W, py=pos.y*CUT_H;
+    rect={x:px-w/2,y:py-h/2,w,h};
+    x.fillStyle="#e8e2cf"; x.fillRect(rect.x,rect.y,w,h);
+    x.strokeStyle="#6b5a3a"; x.lineWidth=3; x.strokeRect(rect.x,rect.y,w,h);
+    x.fillStyle="#222"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(item,px,py);
+  }
+  return {canvas:o,rect};
+}
+function lensPath(ctx,cut,s){
+  const {a,b}=cut, w=cut.w*s, mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+  const L=Math.hypot(b.x-a.x,b.y-a.y)||1, nx=-(b.y-a.y)/L, ny=(b.x-a.x)/L;
+  ctx.beginPath(); ctx.moveTo(a.x,a.y);
+  ctx.quadraticCurveTo(mx+nx*w,my+ny*w,b.x,b.y);
+  ctx.quadraticCurveTo(mx-nx*w,my-ny*w,a.x,a.y);
+  ctx.closePath();
+}
+function drawSeat(ctx,c,preview){
+  ctx.drawImage(c.base,0,0);
+  for(const cut of c.cuts){
+    if(cut.w<1) continue;
+    ctx.save(); lensPath(ctx,cut,1); ctx.clip(); ctx.drawImage(c.foam,0,0);
+    ctx.lineWidth=10; ctx.strokeStyle="rgba(0,0,0,.35)"; lensPath(ctx,cut,1); ctx.stroke(); ctx.restore();
+    ctx.lineWidth=3; ctx.strokeStyle="rgba(20,10,5,.75)"; lensPath(ctx,cut,1); ctx.stroke();
+    ctx.lineWidth=3; ctx.strokeStyle="rgba(255,255,255,.18)"; lensPath(ctx,cut,1.35); ctx.stroke();
+  }
+  if(preview){
+    ctx.save(); ctx.setLineDash([8,6]); ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(preview.a.x,preview.a.y); ctx.lineTo(preview.b.x,preview.b.y); ctx.stroke(); ctx.restore();
   }
 }
-function buildKnife(v,c){
-  const pos=c.hit?S.cur.contraband.pos:null, hint=closeHint(c);
-  v.innerHTML=`<div class="closeup"><div class="under">${pos?`<div class="loot" style="left:${pos.x*100}%;top:${pos.y*100}%">${S.cur.contraband.item}</div>`:""}</div>
-    <canvas id="cutCanvas" width="${CUT_W}" height="${CUT_H}"></canvas></div>`;
+function cutHits(cut,c){
+  const r=c.lootRect; if(!r) return false;
+  for(let i=0;i<=24;i++){
+    const t=i/24, qx=cut.a.x+(cut.b.x-cut.a.x)*t, qy=cut.a.y+(cut.b.y-cut.a.y)*t;
+    const o=cut.w/2*(1-Math.pow(2*t-1,2));
+    if(qx>r.x-o&&qx<r.x+r.w+o&&qy>r.y-o&&qy<r.y+r.h+o) return true;
+  }
+  return false;
+}
+function buildKnife(box,c){
+  box.innerHTML=`<canvas id="cutCanvas" width="${CUT_W}" height="${CUT_H}"></canvas>`;
   const cv=$("cutCanvas"), ctx=cv.getContext("2d");
-  paintFabric(ctx,c.id.startsWith("b:")?"#6d5a7a":"#5a4a3a",hint);
-  setSearchMsg((hint?"Eine Naht sieht frisch genäht aus. ":"")+"Nimm das Messer und schneide, wo du willst. Jeder Zentimeter Schaden kostet.");
+  c.base=makeFabric(c.id.startsWith("b:")?"#6d5a7a":"#5a4a3a",closeHint(c));
+  const f=makeFoam(c.hit?S.cur.contraband.item:null,c.hit?S.cur.contraband.pos:null);
+  c.foam=f.canvas; c.lootRect=f.rect;
+  drawSeat(ctx,c);
   cv.addEventListener("pointerdown",e=>{
-    if(S.tool!=="knife") return setSearchMsg("Zum Aufschneiden brauchst du das Messer.");
+    if(c.using!=="knife") return setSearchMsg("Zum Aufschneiden zieh das Messer aus dem Werkzeugkasten hierher.");
+    if(c.anim) return;
     e.preventDefault(); cv.setPointerCapture(e.pointerId);
     const to=ev=>{const r=cv.getBoundingClientRect();return {x:(ev.clientX-r.left)/r.width*CUT_W,y:(ev.clientY-r.top)/r.height*CUT_H}};
-    let last=to(e);
-    ctx.globalCompositeOperation="destination-out"; ctx.strokeStyle="#000"; ctx.lineWidth=16; ctx.lineCap="round"; ctx.lineJoin="round";
-    const move=ev=>{
-      const p=to(ev);
-      ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
-      c.cutLen+=Math.hypot(p.x-last.x,p.y-last.y); last=p;
-      if(pos&&S.spotState[c.id]!=="hit"&&Math.hypot(p.x-pos.x*CUT_W,p.y-pos.y*CUT_H)<50) markFound(c);
-    };
+    const a=to(e); let b=a;
+    const move=ev=>{b=to(ev);drawSeat(ctx,c,{a,b})};
     const up=()=>{
       cv.removeEventListener("pointermove",move);cv.removeEventListener("pointerup",up);cv.removeEventListener("pointercancel",up);
-      ctx.globalCompositeOperation="source-over";
-      if(S.spotState[c.id]!=="hit") setSearchMsg("Schnitt: "+Math.round(c.cutLen/10)+" cm. Nichts zu sehen. Weiterschneiden oder zurück.");
+      const len=Math.hypot(b.x-a.x,b.y-a.y);
+      if(len<20){drawSeat(ctx,c);return}
+      const cut={a,b,w:0,target:Math.min(54,10+len*.16)};
+      c.cuts.push(cut); c.cutLen+=len; c.anim=true;
+      const t0=performance.now();
+      const step=now=>{
+        const k=Math.min(1,(now-t0)/320);
+        cut.w=cut.target*(1-Math.pow(1-k,3)); drawSeat(ctx,c);
+        if(k<1) requestAnimationFrame(step); else {c.anim=false;afterCut(c,cut)}
+      };
+      requestAnimationFrame(step);
     };
     cv.addEventListener("pointermove",move);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
   });
 }
+function afterCut(c,cut){
+  if(S.spotState[c.id]==="hit") return;
+  if(c.hit&&cutHits(cut,c)) markFound(c);
+  else setSearchMsg("Schnitt: "+Math.round(c.cutLen/10)+" cm. Nur Schaumstoff. Weiterschneiden oder zurück.");
+}
 
-// ---------- Schraubenzieher: vier Schrauben ----------
-function buildScrew(v,c){
+// ---------- Schraubenzieher ----------
+function buildScrew(box,c){
   const scratched=!!closeHint(c);
-  v.innerHTML=`<div class="closeup"><div class="cavity">${c.hit?lootHTML():'<span class="emptyTxt">Nur Staub und Kabel.</span>'}</div>
+  box.innerHTML=`<div class="cavity">${c.hit?`<div class="loot">${S.cur.contraband.item}</div>`:'<span class="emptyTxt">Nur Staub und Kabel.</span>'}</div>
     <div class="pcover" id="pcover"><span class="plabel">${c.name}</span>${
-      [0,1,2,3].map(i=>`<button class="screw s${i} ${scratched?"scratched":""}" style="--r:${rint(0,170)}deg" aria-label="Schraube"></button>`).join("")}</div></div>`;
-  setSearchMsg((scratched?"Die Schrauben haben frische Kratzer. ":"")+"Halte jede Schraube mit dem Schraubenzieher gedrückt, bis sie herauskommt.");
-  v.querySelectorAll(".screw").forEach(s=>{
+      [0,1,2,3].map(i=>`<button class="screw s${i} ${scratched?"scratched":""}" style="--r:${rint(0,170)}deg" aria-label="Schraube"></button>`).join("")}</div>`;
+  box.querySelectorAll(".screw").forEach(s=>{
     let timer=null;
     s.addEventListener("pointerdown",e=>{
-      if(S.tool!=="screw") return setSearchMsg("Dafür brauchst du den Schraubenzieher.");
+      if(c.using!=="screw") return setSearchMsg("Dafür brauchst du den Schraubenzieher. Zieh ihn aus dem Werkzeugkasten hierher.");
       if(s.classList.contains("gone")||c.opened) return;
       e.preventDefault(); s.setPointerCapture(e.pointerId); s.classList.add("turning");
       timer=setTimeout(()=>{
@@ -105,16 +173,15 @@ function buildScrew(v,c){
   });
 }
 
-// ---------- Brecheisen: dreimal hebeln ----------
-function buildBar(v,c){
+// ---------- Brecheisen ----------
+function buildBar(box,c){
   const fresh=!!closeHint(c);
-  v.innerHTML=`<div class="closeup"><div class="cavity">${c.hit?lootHTML():'<span class="emptyTxt">Nur Rost.</span>'}</div>
+  box.innerHTML=`<div class="cavity">${c.hit?`<div class="loot">${S.cur.contraband.item}</div>`:'<span class="emptyTxt">Nur Rost.</span>'}</div>
     <div class="pcover metal" id="pcover"><span class="plabel">${c.name}</span>${fresh?'<span class="patch"></span>':""}</div>
-    <div class="lever" id="lever"></div><div class="pulls">Hebeln: <span id="pullCount">0</span>/3</div></div>`;
-  setSearchMsg((fresh?"Eine Stelle glänzt, als wäre sie frisch lackiert. ":"")+"Ziehe das Brecheisen dreimal kräftig nach unten.");
+    <div class="lever" id="lever"></div><div class="pulls">Hebeln: <span id="pullCount">0</span>/3</div>`;
   const lever=$("lever");
   lever.addEventListener("pointerdown",e=>{
-    if(S.tool!=="bar") return setSearchMsg("Dafür brauchst du das Brecheisen.");
+    if(c.using!=="bar") return setSearchMsg("Dafür brauchst du das Brecheisen. Zieh es aus dem Werkzeugkasten hierher.");
     if(c.opened) return;
     e.preventDefault(); lever.setPointerCapture(e.pointerId);
     const y0=e.clientY; let counted=false;

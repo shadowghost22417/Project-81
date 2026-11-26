@@ -1,4 +1,4 @@
-// Dokumente, Pass, Stempel, Lupe und Prüfmodus
+// Dokumente, Pass, Stempel, Lupe und Rotstift
 
 const PAGE_W=190, ZOOM=2.2;
 const T=(pl,de)=>pl+(S.day===1?`<span class="tr">${de}</span>`:"");
@@ -27,11 +27,11 @@ function carSVG(mi,color,low){
   </svg>`;
 }
 
-// ---------- Ziehen mit dem Finger ----------
+// ---------- Ziehen auf dem Tisch ----------
 function makeDraggable(el,onDrop,handle,onMove){
   el.addEventListener("pointerdown",e=>{
     el._moved=false;
-    if(S.checkMode||S.busy||S.flipping||e.target.closest(".nodrag")) return;
+    if(S.checkMode||S.busy||S.flipping) return;
     if(handle&&!e.target.closest(handle)) return;
     e.preventDefault();
     el.setPointerCapture(e.pointerId);
@@ -55,6 +55,7 @@ function overlaps(a,b){
   const r=a.getBoundingClientRect(), s=b.getBoundingClientRect();
   return !(r.right<s.left||r.left>s.right||r.bottom<s.top||r.top>s.bottom);
 }
+function pointIn(x,y,el){const r=el.getBoundingClientRect();return x>r.left&&x<r.right&&y>r.top&&y<r.bottom}
 function placeDoc(cls,html,xFrac,y,onDrop,handle){
   const desk=$("desk"), el=document.createElement("div");
   el.className="doc "+cls; el.innerHTML=html; desk.appendChild(el);
@@ -68,33 +69,6 @@ function clampDoc(el,left){
   el.style.left=Math.max(0,Math.min(x,d.clientWidth-el.offsetWidth))+"px";
   el.style.top=Math.max(0,Math.min(el.offsetTop,d.clientHeight-el.offsetHeight))+"px";
 }
-function foldable(el){
-  el.querySelector("h3").addEventListener("click",()=>{if(!el._moved&&!S.checkMode){el.classList.toggle("mini");clampDoc(el)}});
-}
-
-// ---------- Feste Dokumente der Schicht ----------
-function renderRules(){
-  const el=placeDoc("rules keep",`<h3>${T("Instrukcja – dzień "+S.day,"Dienstanweisung")}<small>antippen: ein/aus</small></h3><ol>
-    <li>Ausreise nur mit Dowód, Paszport und Przepustka.</li>
-    <li>Der Paszport muss gültig sein.</li>
-    <li>Alle Namen exakt gleich, auch ą, ł, ś usw.</li>
-    <li>Die Ausweisnummer im Paszport muss stimmen.</li>
-    <li>Die Przepustka muss heute gültig sein.</li>
-    <li>Das Foto muss die Person zeigen.</li>
-    <li>Kennzeichen und Modell wie im Dowód rejestracyjny.</li>
-    <li>Fremdes Auto nur mit Upoważnienie.</li>
-    <li>Gepäck muss vollständig deklariert sein.</li>
-    <li>Aussagen müssen zu den Papieren passen.</li>
-    <li>Fälschung, Schmuggel oder List gończy: Festnahme.</li></ol>`,0.005,52);
-  if(S.day>1) el.classList.add("mini");
-  foldable(el);
-}
-function renderWanted(){
-  const el=placeDoc("wanted keep",`<h3>${T("List gończy","Fahndungsliste")}<small>antippen: ein/aus</small></h3>${
-    S.wantedList.map((w,i)=>`<div class="row wrow"><div class="photo f" data-k="wanted.${i}">${faceSVG(w.face,true)}</div>
-      <div>${w.name}<br><small>${w.reason}</small></div></div>`).join("")}`,0.005,9999);
-  foldable(el);
-}
 
 // ---------- Dokumente der Reisenden ----------
 function renderTravelerDocs(){
@@ -105,32 +79,32 @@ function renderTravelerDocs(){
     <small>Name</small><br><span class="f" data-k="id.name">${t.name}</span><br>
     <small>Geburtsdatum</small><br>${fmt(t.birth)}<br>
     <small>Wohnort</small><br>${t.city}<br>
-    <small>Ausweisnummer</small><br><span class="f" data-k="id.nr">${t.id}</span></div></div>`,0.2,60);
+    <small>Ausweisnummer</small><br><span class="f" data-k="id.nr">${t.id}</span></div></div>`,0.28,60);
 
   if(t.hasPermit) placeDoc("permit",`<h3>${T("Przepustka","Passierschein")}</h3>
     <small>Name</small><br><span class="f" data-k="permit.name">${t.permitName}</span><br>
     <small>Reiseziel</small><br><span class="f" data-k="permit.dest">${t.dest}</span><br>
     <small>Gültig bis</small><br><span class="f" data-k="permit.expiry">${fmt(t.permitUntil)}</span><br>
-    <span class="wron">WRON</span>`,0.37,70);
+    <span class="wron">WRON</span>`,0.42,70);
 
   placeDoc("reg",`<h3>${T("Dowód rejestracyjny","Fahrzeugschein")}</h3>
     <small>Kennzeichen</small><br><span class="f" data-k="reg.plate">${c.regPlate}</span><br>
     <small>Marke und Typ</small><br><span class="f" data-k="reg.model">${CAR_MODELS[c.regModel].name}</span><br>
     <small>Baujahr</small><br>${c.year}<br>
-    <small>Halter</small><br><span class="f" data-k="reg.owner">${c.owner}</span>`,0.52,56);
+    <small>Halter</small><br><span class="f" data-k="reg.owner">${c.owner}</span>`,0.55,56);
 
   const decl=t.bag.filter(i=>i.declared).map(i=>`${i.name}: ${i.declared} ${i.unit}`).join("<br>")||"keine Waren";
   placeDoc("decl",`<h3>${T("Deklaracja celna","Zollerklärung")}</h3><small>Angemeldete Waren</small><br>${decl}<br><br>
-    <small>Unterschrift</small><div class="sign">${t.name.split(" ")[1]}</div>`,0.66,80);
+    <small>Unterschrift</small><div class="sign">${t.name.split(" ")[1]}</div>`,0.68,80);
 
   if(t.auth) placeDoc("auth",`<h3>${T("Upoważnienie","Vollmacht")}</h3>Ich, ${c.owner}, bevollmächtige<br>
     <span class="f" data-k="auth.name">${t.name}</span><br>zur Nutzung des Fahrzeugs ${c.regPlate}.
-    <div class="sign">${c.owner.split(" ")[1]}</div>`,0.6,150);
+    <div class="sign">${c.owner.split(" ")[1]}</div>`,0.62,150);
 
-  const pass=placeDoc("pass","",0.3,150,onPassDrop,".grip");
+  const pass=placeDoc("pass","",0.36,150,onPassDrop,".ptop");
   pass.id="passport"; renderPass();
   pass.addEventListener("pointerdown",e=>{
-    if(!e.target.closest(".spread")) return;
+    if(!e.target.closest(".spread")||e.target.closest(".ptop")) return;
     const x0=e.clientX;
     const up=ev=>{window.removeEventListener("pointerup",up);const dx=ev.clientX-x0;if(Math.abs(dx)>35)flipPass(dx<0?1:-1)};
     window.addEventListener("pointerup",up);
@@ -139,20 +113,21 @@ function renderTravelerDocs(){
 
 // ---------- Pass ----------
 function renderPass(){
-  const el=$("passport"), t=S.cur, p=S.passSpread;
+  const el=$("passport"), t=S.cur, p=S.passSpread, top=s=>`<div class="ptop">${s}</div>`;
   el.classList.toggle("closed",p===0);
   let inner;
-  if(p===0) inner=`<div class="pg cover"><div class="crest"></div>POLSKA<br>RZECZPOSPOLITA<br>LUDOWA<b>PASZPORT</b><div class="swipe">‹ wischen zum Öffnen</div></div>`;
-  else if(p===1) inner=`<div class="pg left"><div class="row">${photoHTML(t.photoFace,"pass.photo")}<div>
+  if(p===0) inner=`<div class="pg cover">${top("")}<div class="crest"></div>POLSKA<br>RZECZPOSPOLITA<br>LUDOWA<b>PASZPORT</b>${
+    S.day===1?'<div class="swipe">Reisepass</div>':""}</div>`;
+  else if(p===1) inner=`<div class="pg left">${top("Paszport")}<div class="row">${photoHTML(t.photoFace,"pass.photo")}<div>
       <small>Name</small><br><span class="f" data-k="pass.name">${t.passName}</span><br>
       <small>Ausweisnummer</small><br><span class="f" data-k="pass.nr">${t.passId}</span></div></div>
       <small>Passnummer</small><br>${t.passNr}<br>
       <small>Gültig bis</small><br><span class="f" data-k="pass.expiry">${fmt(t.passExpiry)}</span></div>
-    <div class="pg right"><small>Frühere Grenzübertritte</small><div class="history">${
+    <div class="pg right">${top("")}<small>Frühere Grenzübertritte</small><div class="history">${
       t.history.map(h=>`<span class="old">${h.place}<br>${fmt(h.date)}</span>`).join("")||"<i>keine Einträge</i>"}</div></div>`;
-  else inner=`<div class="pg left"><small>Amtliche Vermerke</small><p class="official">Gültig für Reisen in die DDR.</p></div>
-    <div class="pg right"><small>Kontrollstempel</small><div class="stampArea" id="stampArea">${S.mark?imprintHTML(S.mark):""}</div></div>`;
-  el.innerHTML=`<div class="grip"><span>Paszport${S.day===1?" (Reisepass)":""}</span><span>${p?p+"/2":""}</span></div><div class="spread">${inner}</div>`;
+  else inner=`<div class="pg left">${top("Paszport")}<small>Amtliche Vermerke</small><p class="official">Gültig für Reisen in die DDR.</p></div>
+    <div class="pg right">${top("")}<small>Kontrollstempel</small><div class="stampArea" id="stampArea">${S.mark?imprintHTML(S.mark):""}</div></div>`;
+  el.innerHTML=`<div class="spread">${inner}</div>`;
   clampDoc(el);
   markSelected();
 }
@@ -163,7 +138,7 @@ function staticClone(node){
   return c;
 }
 function flipPass(dir){
-  if(S.flipping) return;
+  if(S.flipping||S.busy) return;
   const p=S.passSpread, n=Math.max(0,Math.min(2,p+dir));
   if(n===p) return;
   const el=$("passport"), x=el.offsetLeft;
@@ -175,7 +150,6 @@ function flipPass(dir){
 
   S.passSpread=n; renderPass();
   if(p===0) clampDoc(el,x-PAGE_W);
-  if(n===2) setHint("Stempelseite offen. Ziehe einen Stempel auf die rechte Seite.");
   if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   const target=el.querySelector(dir>0?".pg.left":".pg.right");
@@ -221,13 +195,11 @@ function onStampDrop(st){
       else{
         S.mark={type:st.dataset.type,x:(cx-a.left)/a.width*100,y:(cy-a.top)/a.height*100,rot:rint(-14,14)};
         area.innerHTML=imprintHTML(S.mark);
-        // Abdruck vollständig auf das Papier schieben
         const ir=area.firstElementChild.getBoundingClientRect(); let dx=0,dy=0;
         if(ir.left<a.left) dx=a.left-ir.left; else if(ir.right>a.right) dx=a.right-ir.right;
         if(ir.top<a.top) dy=a.top-ir.top; else if(ir.bottom>a.bottom) dy=a.bottom-ir.bottom;
         if(dx||dy){S.mark.x+=dx/a.width*100;S.mark.y+=dy/a.height*100;area.innerHTML=imprintHTML(S.mark)}
         st.classList.add("press"); setTimeout(()=>st.classList.remove("press"),150);
-        setHint("Gestempelt. Ziehe den Pass am oberen Rand in die Durchreiche.");
       }
     } else toast("Daneben. Setze den Stempel auf die Stempelseite.","info");
   }
@@ -240,7 +212,7 @@ function setupLens(){makeDraggable($("lens"),updateLens,null,requestLens);homeLe
 function homeLens(){const d=$("desk"),l=$("lens");l.style.left=(d.clientWidth-300)+"px";l.style.top=(d.clientHeight-170)+"px";l.style.zIndex=99999}
 function requestLens(){if(lensQueued)return;lensQueued=true;requestAnimationFrame(()=>{lensQueued=false;updateLens()})}
 function updateLens(){
-  const lens=$("lens"), view=$("lensView"); if(!lens||!view) return;
+  const view=$("lensView"); if(!view) return;
   const r=view.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
   const hitEl=document.elementsFromPoint(cx,cy).find(e=>!e.closest("#lens")&&e.closest(".doc"));
   const doc=hitEl?hitEl.closest(".doc"):null;
@@ -253,17 +225,20 @@ function updateLens(){
   view.appendChild(c);
 }
 
-// ---------- Prüfmodus ----------
+// ---------- Rotstift ----------
 function toggleCheck(force){
   S.checkMode=typeof force==="boolean"?force:!S.checkMode;
   S.sel=[]; markSelected();
   document.body.classList.toggle("checking",S.checkMode);
-  $("bCheck").classList.toggle("on",S.checkMode);
-  $("bCheck").textContent=S.checkMode?"Prüfmodus beenden":"Prüfmodus";
-  setHint(S.checkMode?"Tippe zwei Angaben an, die nicht zusammenpassen: Namen, Nummern, Fotos, Gesicht, Datum, Auto oder Aussagen.":"");
+  $("pencil").classList.toggle("inhand",S.checkMode);
+  if(S.checkMode){toggleAsk(false);toggleFolderMenu(false)}
+  setHint(S.checkMode?"Rotstift in der Hand: Kreise zwei Angaben ein, die nicht zusammenpassen. Stift antippen zum Weglegen.":"");
 }
 function markSelected(){
-  document.querySelectorAll("[data-k]").forEach(e=>e.classList.toggle("sel",S.sel.includes(e.dataset.k)));
+  document.querySelectorAll("[data-k]").forEach(e=>{
+    e.classList.toggle("circ",S.sel.includes(e.dataset.k));
+    e.classList.toggle("proven",S.proven.includes(e.dataset.k));
+  });
 }
 function comparePair(a,b){
   const t=S.cur, c=t.car, has=(x,y)=>(a===x&&b===y)||(a===y&&b===x);
@@ -301,6 +276,10 @@ document.addEventListener("click",e=>{
   if(res==="none") toast("Diese Angaben kann man nicht vergleichen.","info");
   else if(res==="auth") toast("Fremdes Auto, aber es liegt eine Upoważnienie vor.","info");
   else if(!res) toast("Kein Widerspruch.","info");
-  else{ toast("Unstimmigkeit: "+res.text,"bad"); if(res.forgery) S.evidence=res; updateHUD(); }
+  else{
+    toast("Unstimmigkeit: "+res.text,"bad");
+    S.sel.forEach(x=>{if(!S.proven.includes(x))S.proven.push(x)});
+    if(res.forgery) S.evidence=res;
+  }
   setTimeout(()=>{S.sel=[];markSelected()},900);
 });

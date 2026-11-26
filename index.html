@@ -21,21 +21,33 @@
         <span id="carPlate" class="plate f" data-k="car.plate"></span>
       </div>
       <div id="traveler" data-k="face"></div>
+      <div id="askMenu"></div>
       <div id="queue"></div>
     </div>
-    <div id="panel">
-      <div id="clock">16:00</div>
-      <div id="date" data-k="date"></div>
-      <div id="stats"></div>
-      <button class="act check" id="bCheck">Prüfmodus</button>
-      <button class="act" id="bAsk">Befragen</button>
-      <button class="act" id="bSearch">Fahrzeug durchsuchen</button>
-      <button class="act arrest" id="bArrest" disabled>Festnehmen</button>
-      <div id="hint"></div>
+    <div id="wall">
+      <div id="clock">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="#f1ead6" stroke="#3a3328" stroke-width="5"/>
+          <g id="ticks"></g>
+          <line id="hHand" x1="50" y1="50" x2="50" y2="28" stroke="#222" stroke-width="5" stroke-linecap="round"/>
+          <line id="mHand" x1="50" y1="50" x2="50" y2="14" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="3.5" fill="#b0262c"/>
+        </svg>
+      </div>
+      <div id="calendar" data-k="date"><div id="calMonth"></div><div id="calDay"></div><div id="calYear"></div></div>
+      <div id="note"></div>
     </div>
   </div>
   <div id="desk">
-    <div id="slot">Durchreiche: gestempelten Pass hierher ziehen</div>
+    <div id="slot">Durchreiche</div>
+    <div id="folder"><b>Teczka</b><small>Dienstmappe</small></div>
+    <div id="folderMenu"></div>
+    <div id="cuffs" aria-label="Handschellen">
+      <svg viewBox="0 0 120 60"><circle cx="28" cy="30" r="20" fill="none" stroke="#9aa0a6" stroke-width="7"/>
+      <circle cx="92" cy="30" r="20" fill="none" stroke="#9aa0a6" stroke-width="7"/>
+      <path d="M48 30 h24" stroke="#6b7177" stroke-width="5" stroke-dasharray="6 3"/></svg>
+    </div>
+    <div id="pencil" aria-label="Rotstift"><div class="pbody"></div></div>
     <div id="lens"><div id="lensView"></div></div>
     <div class="stamp ok" data-type="ok">ZEZWOLONO</div>
     <div class="stamp no" data-type="no">ODMOWA</div>
@@ -48,33 +60,32 @@
   <h2>Grenzübergang Zgorzelec</h2>
   <p>14. Dezember 1981. Seit gestern gilt das Kriegsrecht. Du sitzt in der Kontrollhütte an der Grenze zur DDR.
   Prüfe Papiere, Autos und Gepäck. Um 22 Uhr beginnt die Sperrstunde.</p>
-  <p style="opacity:.8">Wische über den Paszport zum Blättern, verschiebe ihn am gestreiften Rand. Stempel auf die letzte Seite, dann ab in die Durchreiche.
-  Im Prüfmodus vergleichst du zwei Angaben. Die Lupe ziehst du über Dokumente. Mit einem Beweis oder einem Fund kannst du festnehmen.</p>
+  <p style="opacity:.8">Tippe die Person an, um mit ihr zu reden, und das Auto, um hinauszugehen.
+  Mit dem Rotstift kreist du Widersprüche ein, die Handschellen ziehst du auf die Person.
+  Deine Unterlagen liegen in der Teczka. Stempel auf die letzte Passseite, dann ab in die Durchreiche.</p>
   <button class="big" id="bStart">Schicht beginnen</button>
 </div>
 
-<div class="overlay" id="carScene">
-  <h2 id="searchTitle">Fahrzeugkontrolle</h2>
-  <p id="carSpeech" style="font-style:italic"></p>
-  <div id="searchView"></div>
-  <div id="tools">
-    <button class="tool" data-tool="hand">Hand</button>
-    <button class="tool" data-tool="lamp">Taschenlampe</button>
-    <button class="tool" data-tool="knock">Klopfen</button>
-    <button class="tool" data-tool="knife">Messer</button>
-    <button class="tool" data-tool="screw">Schraubenzieher</button>
-    <button class="tool" data-tool="bar">Brecheisen</button>
+<div class="overlay outside" id="outside">
+  <div id="outHead"><button class="door" id="bDoor">‹ Zurück in die Hütte</button><h2 id="outTitle"></h2></div>
+  <div id="stage">
+    <div id="carStage"></div>
+    <div id="table">
+      <div id="suitcase">
+        <button class="latch l0" data-latch="0" aria-label="Schloss links"></button>
+        <button class="latch l1" data-latch="1" aria-label="Schloss rechts"></button>
+        <span>Koffer</span>
+      </div>
+    </div>
   </div>
+  <div id="panelOut"></div>
   <div id="searchMsg"></div>
-  <button class="big" id="bBack">Zurück in die Hütte</button>
-</div>
-
-<div class="overlay ask" id="askScene">
-  <div class="askBox">
-    <h2>Befragung</h2>
-    <div id="askAnswer"></div>
-    <div id="askList"></div>
-    <button class="big" id="bAskDone">Fertig</button>
+  <div id="toolbox">
+    <div class="tooli" data-tool="lamp">Taschenlampe</div>
+    <div class="tooli" data-tool="knock">Klopfen</div>
+    <div class="tooli" data-tool="knife">Messer</div>
+    <div class="tooli" data-tool="screw">Schraubenzieher</div>
+    <div class="tooli" data-tool="bar">Brecheisen</div>
   </div>
 </div>
 
@@ -86,6 +97,7 @@
 
 <script src="data.js"></script>
 <script src="documents.js"></script>
+<script src="hut.js"></script>
 <script src="car.js"></script>
 <script src="tools.js"></script>
 <script src="interrogation.js"></script>

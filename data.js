@@ -1,8 +1,9 @@
 // Einstellungen, Daten und Hilfsfunktionen
 const DAY_START=16*60, DAY_END=22*60, DECIDE_COST=30, ASK_COST=3;
 const COST={look:5,knock:3,area:2};
-const DAMAGE=30, WRONG_SEIZE=20;
-const TOOL_NAMES={hand:"der Hand",lamp:"der Taschenlampe",knock:"Klopfen",knife:"Messer",screw:"Schraubenzieher",bar:"Brecheisen"};
+const DAMAGE=30, WRONG_SEIZE=20, WRONG_ARREST=200;
+const TOOL_SHORT={knife:"Messer",screw:"Schraubenzieher",bar:"Brecheisen"};
+const TOOL_ACC={knife:"das Messer",screw:"den Schraubenzieher",bar:"das Brecheisen"};
 
 const FIRST_M=["Jan","Piotr","Krzysztof","Andrzej","Tomasz","Marek","Józef","Stanisław","Zbigniew","Tadeusz","Łukasz","Wojciech"];
 const FIRST_F=["Anna","Maria","Katarzyna","Małgorzata","Agnieszka","Barbara","Ewa","Krystyna","Elżbieta","Zofia","Jadwiga","Bożena"];
@@ -14,7 +15,7 @@ const PLATE_PREFIX=["WAB","KRC","WRF","GDA","POZ","LDB","KTA","SZC","LUA","LGA",
 const DESTS=["Görlitz","Dresden","Berlin (Ost)","Leipzig","Cottbus"];
 const BORDER_PLACES=["Zgorzelec","Świecko","Cieszyn","Kołbaskowo","Okęcie"];
 const GOODS=["Solidarność-Flugblätter","Untergrundzeitungen","300 US-Dollar","Westmark-Bündel",
-  "Tonbänder mit Radio Free Europe","Jeans aus dem Westen","Druckmatrizen"];
+  "Tonbänder (Radio Free Europe)","Jeans aus dem Westen","Druckmatrizen"];
 const LINES=["Dzień dobry. Ich besuche meine Schwester.","Guten Abend. Ich muss zur Arbeit nach drüben.",
   "Bitte, es ist kalt. Wie lange dauert das noch?","Meine Tante ist krank, ich bringe ihr Medikamente.","Dienstreise. Alles ist gestempelt."];
 const NERVOUS=["Ist… ist alles in Ordnung mit den Papieren?","Ich habe es wirklich eilig, Genosse.","Das Auto? Da ist nichts drin. Nur Gepäck."];
@@ -27,42 +28,42 @@ const HAIRS=["#2b2018","#5a3b22","#8a6a3a","#999999","#c9a35a"];
 const COATS=["#4a4a52","#5b4636","#3d4a3a","#6b2f2f"];
 const CAR_COLORS=["#c8b26a","#8fa3b0","#a8423a","#6f8a5b","#d6d0c0","#3f5a7a"];
 
-// Gepäck: Name, Einheit, min, max
 const BAG_ITEMS=[["Bohnenkaffee","Pakete",1,3],["Wodka","Flaschen",1,2],["Zigaretten","Stangen",1,2],["Kleidung","Stück",2,8],
   ["Konserven","Dosen",1,6],["Bücher","Stück",1,3],["Schokolade","Tafeln",1,5]];
-// Verstecke: [Name, Art, Werkzeug]. open = offen, dark = Taschenlampe, panel = verschlossen
+// Verstecke: [Name, Art, Werkzeug]  open = offen, dark = Taschenlampe, panel = verschlossen
 const BAG_SPOTS=[["Kofferboden","panel","bar"],["Futter","panel","knife"],["Seitentasche","open"],["Kulturbeutel","open"]];
 const CABIN=[["Handschuhfach","open"],["Unter den Sitzen","dark"],["Rücksitzpolster","panel","knife"],["Türverkleidung","panel","screw"]];
 const FRONT_ENGINE=[["Luftfilter","open"],["Hinter dem Kühler","dark"],["Batteriekasten","panel","screw"]];
+// Bereiche: [Name, Position, Verstecke, Geste]  up = nach oben wischen, side = zur Seite ziehen
 const CAR_MODELS=[
   {name:"Fiat 126p",short:"126p",from:1973,r:20,wheels:[130,270],
     body:"M90 150 L90 115 Q92 100 110 98 L130 96 Q145 58 175 54 L235 54 Q262 58 275 96 L295 100 Q310 104 310 120 L310 150 Z",
     win:["M140 96 Q152 66 178 64 L200 64 L200 96 Z","M208 64 L232 64 Q252 68 264 96 L208 96 Z"],
-    areas:[["Kofferraum vorne",[27,58],[["Kofferraumboden","open"],["Reserverad","panel","bar"],["Hinter der Verkleidung","dark"]]],
-      ["Innenraum",[50,36],CABIN],
-      ["Motorraum hinten",[73,58],[["Luftfilterkasten","open"],["Neben dem Motor","dark"],["Motorabdeckung","panel","screw"]]]]},
+    areas:[["Kofferraum vorne",[27,58],[["Kofferraumboden","open"],["Reserverad","panel","bar"],["Hinter der Verkleidung","dark"]],"up"],
+      ["Innenraum",[50,36],CABIN,"side"],
+      ["Motorraum hinten",[73,58],[["Luftfilterkasten","open"],["Neben dem Motor","dark"],["Motorabdeckung","panel","screw"]],"up"]]},
   {name:"Polski Fiat 125p",short:"125p",from:1967,r:22,wheels:[100,300],
     body:"M40 150 L40 112 L48 104 L110 100 L140 62 L250 62 L285 100 L352 104 L360 112 L360 150 Z",
     win:["M148 98 L168 70 L205 70 L205 98 Z","M213 70 L245 70 L272 98 L213 98 Z"],
-    areas:[["Motorraum vorne",[16,58],FRONT_ENGINE],["Innenraum",[50,36],CABIN],
-      ["Kofferraum hinten",[84,58],[["Kofferraumboden","open"],["Reserveradmulde","dark"],["Seitenverkleidung","panel","screw"]]]]},
+    areas:[["Motorraum vorne",[16,58],FRONT_ENGINE,"up"],["Innenraum",[50,36],CABIN,"side"],
+      ["Kofferraum hinten",[84,58],[["Kofferraumboden","open"],["Reserveradmulde","dark"],["Seitenverkleidung","panel","screw"]],"up"]]},
   {name:"FSO Polonez",short:"Polonez",from:1978,r:22,wheels:[105,300],
     body:"M40 150 L40 118 L52 108 L120 100 L160 62 L270 60 L350 100 L360 118 L360 150 Z",
     win:["M166 98 L180 70 L220 70 L220 98 Z","M228 70 L266 68 L320 98 L228 98 Z"],
-    areas:[["Motorraum vorne",[16,58],FRONT_ENGINE],["Innenraum",[50,36],CABIN],
-      ["Heckklappe",[84,58],[["Ladeboden","open"],["Unter der Hutablage","dark"],["Seitenverkleidung","panel","screw"]]]]},
+    areas:[["Motorraum vorne",[16,58],FRONT_ENGINE,"up"],["Innenraum",[50,36],CABIN,"side"],
+      ["Heckklappe",[84,58],[["Ladeboden","open"],["Unter der Hutablage","dark"],["Seitenverkleidung","panel","screw"]],"up"]]},
   {name:"FSO Syrena 105",short:"Syrena",from:1972,r:22,wheels:[110,290],
     body:"M50 150 L50 120 Q55 96 100 94 Q130 56 190 54 Q260 54 290 92 Q345 98 350 125 L350 150 Z",
     win:["M140 92 Q160 64 195 62 L200 92 Z","M208 62 Q252 64 275 92 L208 92 Z"],
-    areas:[["Motorraum vorne",[18,58],[["Werkzeugkiste","open"],["Hinter dem Kühler","dark"],["Kotflügel innen","panel","bar"]]],
-      ["Innenraum",[50,36],CABIN],
-      ["Kofferraum hinten",[82,58],[["Kofferraumboden","open"],["Reserverad","panel","bar"],["Ecke hinten","dark"]]]]},
+    areas:[["Motorraum vorne",[18,58],[["Werkzeugkiste","open"],["Hinter dem Kühler","dark"],["Kotflügel innen","panel","bar"]],"up"],
+      ["Innenraum",[50,36],CABIN,"side"],
+      ["Kofferraum hinten",[82,58],[["Kofferraumboden","open"],["Reserverad","panel","bar"],["Ecke hinten","dark"]],"up"]]},
   {name:"FS Lublin Żuk",short:"Żuk",from:1959,r:22,wheels:[100,300],
     body:"M40 150 L40 100 L70 60 L360 60 L360 150 Z",
     win:["M78 98 L96 68 L140 68 L140 98 Z"],
-    areas:[["Fahrerhaus",[22,40],[["Handschuhfach","open"],["Unter der Sitzbank","dark"],["Sitzbank","panel","knife"],["Türverkleidung","panel","screw"]]],
-      ["Motor",[22,74],[["Motorabdeckung","panel","screw"],["Neben dem Motor","dark"]]],
-      ["Laderaum",[66,50],[["Kisten","open"],["Ecken hinten","dark"],["Ladeboden","panel","bar"],["Seitenwand","panel","screw"]]]]}
+    areas:[["Fahrerhaus",[22,38],[["Handschuhfach","open"],["Unter der Sitzbank","dark"],["Sitzbank","panel","knife"],["Türverkleidung","panel","screw"]],"side"],
+      ["Motor",[22,76],[["Motorabdeckung","panel","screw"],["Neben dem Motor","dark"]],"up"],
+      ["Laderaum",[66,50],[["Kisten","open"],["Ecken hinten","dark"],["Ladeboden","panel","bar"],["Seitenwand","panel","screw"]],"side"]]}
 ];
 
 const FLAWS={
@@ -88,7 +89,7 @@ const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const fmt=d=>String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+d.getFullYear();
 const idNr=()=>pick(["AB","CD","EG","KR","WR"])+" "+rint(100000,999999);
-const randPos=()=>({x:.2+Math.random()*.6,y:.25+Math.random()*.5});
+const randPos=()=>({x:.25+Math.random()*.5,y:.3+Math.random()*.4});
 
 function randomFace(female){
   return {skin:pick(SKINS),hair:pick(HAIRS),coat:pick(COATS),hat:Math.random()<.35,
@@ -151,7 +152,6 @@ function makeTraveler(date,wantedList){
     .map(([n,u,a,b])=>{const c=rint(a,b);return {name:n,unit:u,count:c,declared:c}});
   if(Math.random()<.2){t.car.owner=randomName(name);t.auth=true}
 
-  // Fehler in den Papieren
   if(W) t.flaw="wanted";
   else if(Math.random()<.45){
     t.flaw=pick(RANDOM_FLAWS);
@@ -170,7 +170,6 @@ function makeTraveler(date,wantedList){
     }
   }
 
-  // Schmuggel
   if(Math.random()<.3){
     const r=Math.random(), m=CAR_MODELS[mi], item=pick(GOODS);
     if(r<.5){
@@ -187,12 +186,10 @@ function makeTraveler(date,wantedList){
     }
   }
   t.car.low=(!!t.contraband&&t.contraband.spot.startsWith("c:")&&Math.random()<.5)||Math.random()<.08;
-  // Harmlose Spuren, die verdächtig aussehen
   if(Math.random()<.2){
     const p=panelSpots(t).filter(id=>!t.contraband||t.contraband.spot!==id);
     if(p.length){t.falseSpot=pick(p);t.falseHintPos=randPos()}
   }
-  // Aussagen für das Verhör
   let dest=t.dest;
   if(t.flaw==="destLie"){do{dest=pick(DESTS)}while(dest===t.dest)}
   t.answers={dest,claimOwner:t.flaw==="noAuth"?name:t.car.owner,purpose:pick(PURPOSES),
