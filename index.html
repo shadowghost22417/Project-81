@@ -28,6 +28,7 @@
       <div id="date" data-k="date"></div>
       <div id="stats"></div>
       <button class="act check" id="bCheck">Prüfmodus</button>
+      <button class="act" id="bAsk">Befragen</button>
       <button class="act" id="bSearch">Fahrzeug durchsuchen</button>
       <button class="act arrest" id="bArrest" disabled>Festnehmen</button>
       <div id="hint"></div>
@@ -35,6 +36,7 @@
   </div>
   <div id="desk">
     <div id="slot">Durchreiche: gestempelten Pass hierher ziehen</div>
+    <div id="lens"><div id="lensView"></div></div>
     <div class="stamp ok" data-type="ok">ZEZWOLONO</div>
     <div class="stamp no" data-type="no">ODMOWA</div>
   </div>
@@ -46,9 +48,8 @@
   <h2>Grenzübergang Zgorzelec</h2>
   <p>14. Dezember 1981. Seit gestern gilt das Kriegsrecht. Du sitzt in der Kontrollhütte an der Grenze zur DDR.
   Prüfe Papiere, Autos und Gepäck. Um 22 Uhr beginnt die Sperrstunde.</p>
-  <p style="opacity:.8">Wische über den Paszport, um zu blättern, und fasse ihn am gestreiften Rand oben, um ihn zu verschieben.
-  Stempel auf die letzte Seite, dann ab in die Durchreiche. Im Prüfmodus vergleichst du zwei Angaben.
-  Mit einem Beweis oder einem Fund kannst du festnehmen.</p>
+  <p style="opacity:.8">Wische über den Paszport zum Blättern, verschiebe ihn am gestreiften Rand. Stempel auf die letzte Seite, dann ab in die Durchreiche.
+  Im Prüfmodus vergleichst du zwei Angaben. Die Lupe ziehst du über Dokumente. Mit einem Beweis oder einem Fund kannst du festnehmen.</p>
   <button class="big" id="bStart">Schicht beginnen</button>
 </div>
 
@@ -57,12 +58,24 @@
   <p id="carSpeech" style="font-style:italic"></p>
   <div id="searchView"></div>
   <div id="tools">
-    <button class="tool" data-tool="hand">Hand / öffnen</button>
+    <button class="tool" data-tool="hand">Hand</button>
     <button class="tool" data-tool="lamp">Taschenlampe</button>
     <button class="tool" data-tool="knock">Klopfen</button>
+    <button class="tool" data-tool="knife">Messer</button>
+    <button class="tool" data-tool="screw">Schraubenzieher</button>
+    <button class="tool" data-tool="bar">Brecheisen</button>
   </div>
   <div id="searchMsg"></div>
   <button class="big" id="bBack">Zurück in die Hütte</button>
+</div>
+
+<div class="overlay ask" id="askScene">
+  <div class="askBox">
+    <h2>Befragung</h2>
+    <div id="askAnswer"></div>
+    <div id="askList"></div>
+    <button class="big" id="bAskDone">Fertig</button>
+  </div>
 </div>
 
 <div class="overlay" id="dayEnd">
@@ -74,6 +87,8 @@
 <script src="data.js"></script>
 <script src="documents.js"></script>
 <script src="car.js"></script>
+<script src="tools.js"></script>
+<script src="interrogation.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
