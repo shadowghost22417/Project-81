@@ -89,12 +89,13 @@ function renderTravelerDocs(){
 }
 
 // ---------- Pass ----------
+const coverInner=()=>`<div class="ptop"></div><img class="px crest" src="${SPR.crest}" alt="">POLSKA<br>RZECZPOSPOLITA<br>LUDOWA<b>PASZPORT</b>${
+  S.day===1?'<div class="swipe">Reisepass</div>':""}`;
 function renderPass(){
   const el=$("passport"), t=S.cur, p=S.passSpread, top=s=>`<div class="ptop">${s}</div>`;
   el.classList.toggle("closed",p===0);
   let inner;
-  if(p===0) inner=`<div class="pg cover">${top("")}<img class="px crest" src="${SPR.crest}" alt="">POLSKA<br>RZECZPOSPOLITA<br>LUDOWA<b>PASZPORT</b>${
-    S.day===1?'<div class="swipe">Reisepass</div>':""}</div>`;
+  if(p===0) inner=`<div class="pg cover">${coverInner()}</div>`;
   else if(p===1) inner=`<div class="pg left">${top("Paszport")}<div class="row">${photoHTML(t.photoFace,"pass.photo")}<div>
       <small>Name</small><br><span class="f" data-k="pass.name">${t.passName}</span><br>
       <small>Ausweisnummer</small><br><span class="f" data-k="pass.nr">${t.passId}</span></div></div>
@@ -114,12 +115,33 @@ function staticClone(node){
   c.querySelectorAll("[id],[data-k]").forEach(e=>{e.removeAttribute("id");e.removeAttribute("data-k")});
   return c;
 }
+function makeLeaf(el,dir,front,rear){
+  front.classList.add("face","front"); rear.classList.add("face","rear");
+  const leaf=document.createElement("div");
+  leaf.className="leaf "+(dir>0?"fwd":"bwd");
+  leaf.appendChild(front); leaf.appendChild(rear);
+  el.querySelector(".spread").appendChild(leaf);
+  return leaf;
+}
 function flipPass(dir){
   if(S.flipping||S.busy) return;
   const p=S.passSpread, n=Math.max(0,Math.min(2,p+dir));
   if(n===p) return;
   const el=$("passport"), x=el.offsetLeft;
-  if(n===0){S.passSpread=0;renderPass();clampDoc(el,x+PAGE_W);return}
+  const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Zuklappen: linke Seite klappt über den Rücken, Rückseite ist der Umschlag
+  if(n===0){
+    const oldLeft=el.querySelector(".pg.left");
+    if(reduce||!oldLeft){S.passSpread=0;renderPass();clampDoc(el,x+PAGE_W);return}
+    const front=staticClone(oldLeft), rear=document.createElement("div");
+    rear.className="pg cover"; rear.innerHTML=coverInner();
+    oldLeft.style.visibility="hidden"; el.classList.add("opening");
+    const leaf=makeLeaf(el,-1,front,rear);
+    S.flipping=true;
+    setTimeout(()=>{leaf.remove();el.classList.remove("opening");S.flipping=false;S.passSpread=0;renderPass();clampDoc(el,x+PAGE_W)},470);
+    return;
+  }
 
   const oldLeft=el.querySelector(".pg.left"), oldRight=el.querySelector(".pg.right,.pg.cover");
   const front=staticClone(dir>0?oldRight:oldLeft);
@@ -127,7 +149,7 @@ function flipPass(dir){
 
   S.passSpread=n; renderPass();
   if(p===0) clampDoc(el,x-PAGE_W);
-  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if(reduce) return;
 
   const target=el.querySelector(dir>0?".pg.left":".pg.right");
   const rear=staticClone(target);
@@ -135,12 +157,7 @@ function flipPass(dir){
   if(!under){under=document.createElement("div");under.className="pg left ghost";el.classList.add("opening")}
   target.style.display="none";
   target.parentNode.insertBefore(under,target);
-
-  front.classList.add("face","front"); rear.classList.add("face","rear");
-  const leaf=document.createElement("div");
-  leaf.className="leaf "+(dir>0?"fwd":"bwd");
-  leaf.appendChild(front); leaf.appendChild(rear);
-  el.querySelector(".spread").appendChild(leaf);
+  const leaf=makeLeaf(el,dir,front,rear);
 
   S.flipping=true;
   setTimeout(()=>{leaf.remove();under.remove();target.style.display="";el.classList.remove("opening");S.flipping=false},470);

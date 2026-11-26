@@ -7,7 +7,6 @@ function hex2rgb(h){const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&
 function rgb2hex(r,g,b){const c=v=>Math.max(0,Math.min(255,Math.round(v)));return"#"+((1<<24)|(c(r)<<16)|(c(g)<<8)|c(b)).toString(16).slice(1)}
 function shade(h,f){const[r,g,b]=hex2rgb(h),t=f<0?0:255,a=Math.abs(f);return rgb2hex(r+(t-r)*a,g+(t-g)*a,b+(t-b)*a)}
 function ramp(c){return[shade(c,.38),shade(c,.16),c,shade(c,-.24),shade(c,-.46)]}
-// Wählt eine Farbe aus einer Abstufung, mit Dithering an den Übergängen
 function band(r,v,x,y){const s=[.14,.32,.66,.84];let i=0;while(i<4&&v>s[i])i++;if(i<4&&s[i]-v<.05&&((x+y)&1))i++;return r[Math.min(i,4)]}
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);
   t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -25,7 +24,7 @@ function P(c){
     dot(x,y,col){x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=W||y>=H)return;g.fillStyle=col;g.fillRect(x,y,1,1)},
     clr(x,y){g.clearRect(Math.round(x),Math.round(y),1,1)},
     rect(x,y,w,h,col){g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))},
-    dith(x,y,w,h,col,ph=0){for(let j=0;j<h;j++)for(let i=0;i<w;i++)if(((x+i+y+j+ph)&1)===0)o.dot(x+i,y+j,col)},
+    dith(x,y,w,h,col){for(let j=0;j<h;j++)for(let i=0;i<w;i++)if(((x+i+y+j)&1)===0)o.dot(x+i,y+j,col)},
     ell(cx,cy,rx,ry,col,keep){for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++){const u=rx?x/rx:0,v=ry?y/ry:0;
       if(u*u+v*v<=1.0001){const X=cx+x,Y=cy+y;if(keep&&!keep(X,Y))continue;const cc=typeof col==="function"?col(X,Y,u,v):col;
         if(cc==="clear")o.clr(X,Y);else if(cc)o.dot(X,Y,cc)}}},
@@ -40,7 +39,6 @@ function P(c){
   };
   return o;
 }
-// Dunkle Kontur um alle sichtbaren Pixel
 function outline(c,col=PAL.ink){
   const g=c.getContext("2d"),W=c.width,H=c.height,d=g.getImageData(0,0,W,H),a=d.data,out=new Uint8ClampedArray(a),[r,gg,b]=hex2rgb(col);
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4;if(a[i+3]>0)continue;
@@ -52,7 +50,6 @@ function fromMap(rows,colors,line=true){
   rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(colors[ch])p.dot(x+1,y+1,colors[ch])}));
   if(line) outline(c); return c;
 }
-// Schwarz-Weiß-Foto mit Körnung
 function photoize(src,w,h,ox,oy,bg){
   const c=mk(w,h),g=c.getContext("2d");g.fillStyle=bg;g.fillRect(0,0,w,h);g.drawImage(src,ox,oy);
   const d=g.getImageData(0,0,w,h),a=d.data,R=rng(w*31+h);
@@ -60,6 +57,12 @@ function photoize(src,w,h,ox,oy,bg){
     v=Math.round(Math.max(10,Math.min(235,v))/22)*22;a[i]=a[i+1]=a[i+2]=v;a[i+3]=255}
   g.putImageData(d,0,0); return c;
 }
+// Himmel und Schnee mit sauberen Übergängen (Schachbrett-Dithering nur an Bandgrenzen)
+function drawSky(p,W,hz){const N=PAL.night;
+  for(let y=0;y<hz;y++){const v=y/hz*(N.length-1),i=Math.floor(v),f=v-i;p.rect(0,y,W,1,N[i]);if(i+1<N.length&&f>.6)p.dith(0,y,W,1,N[i+1])}}
+function drawGround(p,W,H,hz,stops){const S=PAL.snow;
+  const bandAt=y=>{const v=(y-hz)/Math.max(1,H-hz);return v<stops[0]?4:v<stops[1]?3:v<stops[2]?2:1};
+  for(let y=hz;y<H;y++){const i=bandAt(y);p.rect(0,y,W,1,S[i]);if(y>hz&&bandAt(y-1)!==i)p.dith(0,y,W,2,S[bandAt(y-1)])}}
 
 // ---------- Kacheln ----------
 function noiseTile(base,amt,seed){const c=mk(24,24),p=P(c),R=rng(seed);
@@ -76,30 +79,35 @@ function woodTile(){const c=mk(48,24),p=P(c),R=rng(3),cols=["#3d2a1b","#382619",
   p.rect(13,1,1,7,"#20150c");p.rect(37,9,1,7,"#20150c");p.rect(25,17,1,7,"#20150c");
   return c.toDataURL()}
 
-// ---------- Autos (Front links) ----------
+// ---------- Autos (Front links). zones = leuchtende Bereiche in derselben Reihenfolge wie die Bereiche in data.js ----------
 const CAR_SHAPES=[
   {body:[[20,34],[20,28],[22,25],[30,23],[38,22],[44,13],[49,11],[70,11],[76,13],[82,21],[88,23],[91,26],[92,30],[92,34]],
     glass:[[[40,21],[45,14],[60,13],[60,21]],[[62,13],[70,13],[75,15],[79,21],[62,21]]],
     wheels:[[32,35,5],[79,35,5]],doors:[[39,23,32],[61,21,32]],handles:[[56,24]],
     chrome:[[17,30,6],[90,30,6]],lights:[[20,26,2,2,"#efe3a6"],[21,30,2,1,"#d99a3a"],[90,25,2,3,"#a3241f"]],
-    lines:[[84,24,88,24,"#17191b"],[84,26,88,26,"#17191b"],[84,28,88,28,"#17191b"]]},
+    lines:[[84,24,88,24,"#17191b"],[84,26,88,26,"#17191b"],[84,28,88,28,"#17191b"]],
+    zones:[[20,21,38,34],[39,11,80,33],[81,19,93,34]]},
   {body:[[6,33],[6,25],[9,23],[30,22],[36,21],[44,12],[72,12],[80,21],[101,22],[105,24],[106,27],[106,33]],
     glass:[[[38,21],[45,13],[58,13],[58,21]],[[60,13],[71,13],[78,21],[60,21]]],
     wheels:[[24,35,6],[88,35,6]],doors:[[37,22,32],[59,21,32],[79,21,32]],handles:[[52,24],[73,24]],
-    chrome:[[3,29,9],[99,29,9]],belt:[10,102,23],lights:[[6,24,2,2,"#efe3a6"],[6,27,2,1,"#efe3a6"],[104,24,2,3,"#a3241f"]]},
+    chrome:[[3,29,9],[99,29,9]],belt:[10,102,23],lights:[[6,24,2,2,"#efe3a6"],[6,27,2,1,"#efe3a6"],[104,24,2,3,"#a3241f"]],
+    zones:[[4,21,36,33],[37,12,79,33],[80,20,108,33]]},
   {body:[[6,33],[6,27],[9,24],[32,22],[40,20],[52,11],[78,11],[97,17],[103,21],[106,25],[106,33]],
     glass:[[[42,20],[53,12],[64,12],[64,20]],[[66,12],[77,12],[93,18],[66,19]]],
     wheels:[[24,35,6],[88,35,6]],doors:[[41,21,32],[65,20,32],[85,19,32]],handles:[[59,23],[80,23]],
-    black:[[4,29,10,3],[98,29,10,3],[14,27,80,1]],lights:[[6,25,3,2,"#ece8cf"],[104,23,2,3,"#a3241f"]]},
+    black:[[4,29,10,3],[98,29,10,3],[14,27,80,1]],lights:[[6,25,3,2,"#ece8cf"],[104,23,2,3,"#a3241f"]],
+    zones:[[4,20,40,33],[41,11,85,33],[86,16,108,33]]},
   {body:[[10,34],[10,27],[12,24],[18,21],[30,20],[37,19],[44,11],[50,9],[66,9],[73,11],[80,19],[92,20],[98,22],[102,26],[102,34]],
     glass:[[[46,18],[51,11],[58,10],[58,18]],[[60,10],[66,10],[71,12],[76,18],[60,18]]],
     wheels:[[26,35,6],[86,35,6]],doors:[[45,19,32],[59,18,32]],handles:[[53,22]],
-    chrome:[[8,30,6],[98,30,6]],belt:[14,98,24],lights:[[11,24,2,2,"#efe3a6"],[100,24,2,2,"#a3241f"]]},
+    chrome:[[8,30,6],[98,30,6]],belt:[14,98,24],lights:[[11,24,2,2,"#efe3a6"],[100,24,2,2,"#a3241f"]],
+    zones:[[8,18,44,34],[45,9,79,33],[80,18,104,34]]},
   {body:[[6,34],[6,22],[8,16],[12,11],[18,9],[30,8],[106,8],[107,10],[107,34]],
     glass:[[[8,16],[12,11],[15,11],[11,17]],[[15,18],[17,12],[29,10],[29,18]]],
     wheels:[[22,35,6],[90,35,6]],doors:[[31,9,32],[94,9,32]],handles:[[26,21],[97,20]],
     chrome:[[4,30,6],[104,30,6]],lights:[[6,23,2,2,"#efe3a6"],[105,26,2,3,"#a3241f"]],
-    lines:[40,48,56,64,72,80,88].map(x=>[x,12,x,28,null])}
+    lines:[40,48,56,64,72,80,88].map(x=>[x,12,x,28,null]),
+    zones:[[12,8,31,25],[4,26,30,34],[32,8,108,34]]}
 ];
 function carSprite(mi,color,dim){
   const key="car"+mi+color+(dim?1:0); if(CACHE[key]) return CACHE[key];
@@ -125,6 +133,19 @@ function carSprite(mi,color,dim){
   const xs=S.body.map(q=>q[0]),x0=Math.min(...xs),x1=Math.max(...xs);
   for(let x=x0-2;x<=x1+2;x++){p.dot(x,42,"rgba(0,0,0,.45)");if(x>x0&&x<x1)p.dot(x,43,"rgba(0,0,0,.25)")}
   return CACHE[key]=c;
+}
+// Leuchtender Umriss eines Autoteils (für draußen)
+function zoneGlow(mi,color,z,open){
+  const key="zg"+mi+color+z.join(",")+(open?1:0); if(CACHE[key]) return CACHE[key];
+  const src=carSprite(mi,color,false),W=src.width,H=src.height,d=src.getContext("2d").getImageData(0,0,W,H).data;
+  const c=mk(W,H),p=P(c),[x0,y0,x1,y1]=z;
+  const inM=(x,y)=>x>=x0&&x<=x1&&y>=y0&&y<=y1&&y<41&&d[(y*W+x)*4+3]>200;
+  const edge=open?"#a9d8ee":"#f2d27a", fill=open?"rgba(160,210,240,.32)":"rgba(255,220,130,.3)";
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    if(!inM(x,y))continue;
+    const border=!inM(x-1,y)||!inM(x+1,y)||!inM(x,y-1)||!inM(x,y+1);
+    if(border)p.dot(x,y,edge);else if(((x+y)&1)===0)p.dot(x,y,fill)}
+  return CACHE[key]=c.toDataURL();
 }
 function carPhoto(mi){
   const key="ph"+mi; if(CACHE[key]) return CACHE[key];
@@ -262,16 +283,15 @@ function drawWindowScene(t){
   const W=Math.max(100,Math.round(box.clientWidth/PXS)),H=Math.max(50,Math.round(box.clientHeight/PXS));
   cv.width=W;cv.height=H;
   const p=P(cv),R=rng(t?t.seed:3),hz=Math.round(H*.56),N=PAL.night,S=PAL.snow;
-  for(let y=0;y<hz;y++){const v=y/hz*(N.length-1),i=Math.floor(v),f=v-i;p.rect(0,y,W,1,N[i]);if(i+1<N.length&&f>.5)p.dith(0,y,W,1,N[i+1],y)}
+  drawSky(p,W,hz);
   for(let i=0;i<6;i++){const cx=Math.round(R()*W),cy=Math.round(R()*hz*.5),rx=10+Math.round(R()*26);
     p.ell(cx,cy,rx,3,(x,y)=>((x+y)&1)?null:N[N.length-1])}
   for(let x=0;x<W;x++){const th=3+Math.round(2.5+Math.sin(x*.9)*1.5+Math.sin(x*.31)*2.2+(x%6===0?3:0));p.rect(x,hz-th,1,th+1,PAL.tree)}
-  for(let y=hz;y<H;y++){const v=(y-hz)/(H-hz),i=v<.18?4:v<.4?3:v<.7?2:1;p.rect(0,y,W,1,S[i]);if(((v*10)%1)>.7&&i>1)p.dith(0,y,W,1,S[i-1],y)}
+  drawGround(p,W,H,hz,[.18,.4,.7]);
   for(let y=hz+2;y<H;y++){const s=(y-hz)/(H-hz),c=Math.round(W*.42),off=Math.round(6+s*24);
     [c-off,c-off+1,c+off,c+off-1].forEach(x=>p.dot(x,y,S[4]))}
   for(let x=2;x<W;x+=8)p.rect(x,hz-7,1,8,"#0b0f14");
   [hz-6,hz-4,hz-2].forEach(yy=>{for(let x=0;x<W;x++)if((x+yy)%3)p.dot(x,yy,"#232b35")});
-  // Wachturm mit Suchscheinwerfer
   const tx=Math.round(W*.22),ty=hz-26;
   p.line(tx,hz,tx+3,ty+8,"#06090d");p.line(tx+12,hz,tx+9,ty+8,"#06090d");
   p.line(tx+1,hz-6,tx+11,hz-6,"#06090d");p.line(tx+2,hz-12,tx+10,hz-12,"#06090d");p.line(tx+1,hz-6,tx+10,hz-12,"#06090d");
@@ -279,17 +299,14 @@ function drawWindowScene(t){
   p.rect(tx+2,ty+3,3,3,"#c7ad62");p.rect(tx+8,ty+3,3,3,"#3a3520");
   for(let i=0;i<60;i++){const y=ty+1+Math.round(i*.18),x=tx+14+i,s=1+Math.floor(i/8);
     for(let d=-s;d<=s;d++)if(((x+y+d)&1)===0)p.dot(x,y+d,"rgba(200,205,180,.10)")}
-  // Laterne
   const lx=Math.round(W*.9),ly=Math.round(hz*.35);
   for(let y=ly+2;y<H;y++){const hw=Math.round((y-ly)*.45);for(let x=-hw;x<=hw;x++){const a=Math.abs(x)/Math.max(1,hw);
     if(a<.55||(((x+y)&1)===0&&a<.9))p.dot(lx+x,y,y<hz?"rgba(230,208,140,.10)":"rgba(230,208,140,.16)")}}
   p.rect(lx,ly,1,hz+4-ly,"#0a0d11");p.rect(lx-3,ly-1,7,2,"#0a0d11");p.rect(lx-2,ly+1,5,1,PAL.lamp);
   p.ell(lx,ly+2,4,2,(x,y)=>((x+y)&1)?"rgba(230,208,140,.35)":null);
-  // Schlagbaum
   const by=hz+3,bx=Math.round(W*.5);
   p.rect(bx-2,by-2,4,9,"#0b0e12");p.rect(bx-3,by+6,6,2,"#0b0e12");
   for(let i=0;i<Math.round(W*.42);i++){const c=Math.floor(i/5)%2?"#b9b4a8":"#8e2226";p.dot(bx+2+i,by,c);p.dot(bx+2+i,by+1,shade(c,-.3))}
-  // Auto und Person
   let carHit=null,manHit=null;
   if(t){
     const spr=carSprite(t.car.model,t.car.color,true),cx=Math.round(W*.02),cy=Math.round(hz+(H-hz)*.42)-38;
@@ -297,7 +314,6 @@ function drawWindowScene(t){
     const man=portraitC(t.face,false),mx=Math.round(W*.66)-29,my=H-man.height+4;
     p.g.drawImage(man,mx,my);manHit=[mx+4,my,man.width-8,man.height-4];
   }
-  // Reif an den Ecken, Spiegelung, Rahmen
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dx=Math.min(x,W-1-x),dy=Math.min(y,H-1-y),d=Math.min(dx+dy*1.6,dx*1.6+dy);
     if(d<14){const n=R();if(n<(1-d/14)*.55)p.dot(x,y,n<.15?"rgba(225,235,245,.55)":"rgba(190,205,220,.28)")}}
   for(let i=0;i<Math.min(W,H)*.8;i++){p.dot(Math.round(W*.72)+i,i,"rgba(170,190,210,.10)");p.dot(Math.round(W*.76)+i,i,"rgba(170,190,210,.07)")}
@@ -306,24 +322,30 @@ function drawWindowScene(t){
   const setHit=(el,h)=>{if(!h){el.style.display="none";return}el.style.display="";
     el.style.left=h[0]/W*100+"%";el.style.top=h[1]/H*100+"%";el.style.width=h[2]/W*100+"%";el.style.height=h[3]/H*100+"%"};
   setHit($("carView"),carHit); setHit($("traveler"),manHit);
-  resizeSnow(W,H);
+  setSnowLayer(0,W,H);
 }
 
-// ---------- Fallender Schnee ----------
-const SNOW={fl:[],W:0,H:0,run:false,last:0};
+// ---------- Fallender Schnee (Fenster und draußen) ----------
+const SNOWS=[{id:"snowCanvas",fl:[],W:0,H:0},{id:"outSnow",fl:[],W:0,H:0}];
+let snowRun=false, snowLast=0;
 const reduceMotion=()=>window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-function resizeSnow(W,H){
-  const cv=$("snowCanvas");cv.width=W;cv.height=H;SNOW.W=W;SNOW.H=H;
-  SNOW.fl=Array.from({length:Math.round(W*H/70)},()=>({x:Math.random()*W,y:Math.random()*H,v:.15+Math.random()*.35,s:Math.random()<.2?2:1,ph:Math.random()*6}));
-  if(reduceMotion()) snowFrame(0,false); else if(!SNOW.run){SNOW.run=true;requestAnimationFrame(snowLoop)}
+function setSnowLayer(i,W,H){
+  const s=SNOWS[i],cv=$(s.id); if(!cv) return;
+  cv.width=W;cv.height=H;s.W=W;s.H=H;
+  s.fl=Array.from({length:Math.round(W*H/70)},()=>({x:Math.random()*W,y:Math.random()*H,v:.15+Math.random()*.35,big:Math.random()<.2,ph:Math.random()*6}));
+  if(reduceMotion()) snowFrame(s,0,false);
+  else if(!snowRun){snowRun=true;requestAnimationFrame(snowLoop)}
 }
-function snowFrame(now,move){
-  const g=$("snowCanvas").getContext("2d");g.clearRect(0,0,SNOW.W,SNOW.H);
-  for(const f of SNOW.fl){
-    if(move){f.y+=f.v;f.x+=Math.sin(now/900+f.ph)*.15;if(f.y>SNOW.H){f.y=-1;f.x=Math.random()*SNOW.W}}
-    g.fillStyle=f.s>1?"rgba(220,228,236,.85)":"rgba(200,210,222,.6)";g.fillRect(Math.round(f.x),Math.round(f.y),f.s>1?2:1,1)}
+function snowFrame(s,now,move){
+  const g=$(s.id).getContext("2d"); g.clearRect(0,0,s.W,s.H);
+  for(const f of s.fl){
+    if(move){f.y+=f.v;f.x+=Math.sin(now/900+f.ph)*.15;if(f.y>s.H){f.y=-1;f.x=Math.random()*s.W}}
+    g.fillStyle=f.big?"rgba(220,228,236,.85)":"rgba(200,210,222,.6)";g.fillRect(Math.round(f.x),Math.round(f.y),f.big?2:1,1)}
 }
-function snowLoop(now){if(now-SNOW.last>60){SNOW.last=now;snowFrame(now,true)}requestAnimationFrame(snowLoop)}
+function snowLoop(now){
+  if(now-snowLast>60){snowLast=now;SNOWS.forEach(s=>{if(s.W)snowFrame(s,now,true)})}
+  requestAnimationFrame(snowLoop);
+}
 
 // ---------- Wand, Uhr, Tischlicht ----------
 function drawWall(){
@@ -357,22 +379,31 @@ function drawDeskLight(){
     else if(dd>1.2&&((x+y)&1))p.dot(x,y,"rgba(0,0,0,.18)")}
 }
 
-// ---------- Szene: draußen ----------
+// ---------- Szene: draußen (Horizont richtet sich nach dem Auto) ----------
+let outKey="", outHz=null;
 function drawOutBg(){
   const cv=$("outBg"),W=Math.max(100,Math.round(innerWidth/PXS)),H=Math.max(80,Math.round(innerHeight/PXS));
-  cv.width=W;cv.height=H;const p=P(cv),R=rng(21),hz=Math.round(H*.36),N=PAL.night,S=PAL.snow;
-  for(let y=0;y<hz;y++){const v=y/hz*(N.length-1),i=Math.floor(v),f=v-i;p.rect(0,y,W,1,N[i]);if(i+1<N.length&&f>.5)p.dith(0,y,W,1,N[i+1],y)}
+  const wrap=$("carWrap");
+  if(wrap){const r=wrap.getBoundingClientRect();if(r.height>0)outHz=Math.round((r.top+r.height*.62)/PXS)}
+  const hz=Math.max(20,Math.min(H-20,outHz||Math.round(H*.4)));
+  const key=W+"x"+H+"@"+hz; if(key===outKey) return; outKey=key;
+  cv.width=W;cv.height=H;const p=P(cv);
+  drawSky(p,W,hz);
   for(let x=0;x<W;x++){const th=3+Math.round(2.5+Math.sin(x*.7)*1.5+Math.sin(x*.27)*2.4+(x%7===0?3:0));p.rect(x,hz-th,1,th+1,PAL.tree)}
-  for(let y=hz;y<H;y++){const v=(y-hz)/(H-hz),i=v<.12?4:v<.3?3:v<.6?2:1;p.rect(0,y,W,1,S[i]);if(((v*12)%1)>.7&&i>1)p.dith(0,y,W,1,S[i-1],y)}
-  const hw=Math.round(W*.1);
-  for(let y=hz-34;y<H;y++)for(let x=0;x<hw;x++)p.dot(x,y,x%6===0?"#160f09":((x*3+y)%13===0?"#2a1d12":"#24180f"));
-  p.rect(Math.round(hw*.3),hz-22,10,8,"#d8b46a");p.rect(Math.round(hw*.3)+4,hz-22,1,8,"#3a2a18");p.rect(Math.round(hw*.3),hz-18,10,1,"#3a2a18");
+  drawGround(p,W,H,hz,[.12,.3,.6]);
+  // Hütte am linken Rand mit erleuchtetem Fenster
+  const hw=Math.round(W*.08);
+  for(let y=hz-40;y<H;y++)for(let x=0;x<hw;x++)p.dot(x,y,x%6===0?"#160f09":((x*3+y)%13===0?"#2a1d12":"#24180f"));
+  p.rect(0,hz-43,hw+3,3,"#120c07");
+  const wx=Math.max(2,Math.round(hw*.25));
+  p.rect(wx,hz-28,10,8,"#d8b46a");p.rect(wx+4,hz-28,1,8,"#3a2a18");p.rect(wx,hz-24,10,1,"#3a2a18");
   for(let y=hz;y<hz+30;y++)for(let x=hw;x<hw+30;x++)if(((x+y)&1)===0&&(x-hw)+(y-hz)*.6<28)p.dot(x,y,"rgba(216,180,106,.12)");
-  const lx=Math.round(W*.86),ly=Math.round(hz*.4);
+  // Laterne in der Ferne
+  const lx=Math.round(W*.93),ly=hz-30;
   for(let y=ly+2;y<H;y++){const w=Math.round((y-ly)*.5);for(let x=-w;x<=w;x++){const a=Math.abs(x)/Math.max(1,w);
-    if(a<.5||(((x+y)&1)===0&&a<.9))p.dot(lx+x,y,"rgba(230,208,140,.12)")}}
-  p.rect(lx,ly,1,H-ly,"#0a0d11");p.rect(lx-3,ly-1,7,2,"#0a0d11");p.rect(lx-2,ly+1,5,1,PAL.lamp);
-  for(let i=0;i<W*H/90;i++)p.dot(Math.floor(R()*W),Math.floor(R()*H),"rgba(210,218,228,.6)");
+    if(a<.5||(((x+y)&1)===0&&a<.9))p.dot(lx+x,y,"rgba(230,208,140,.10)")}}
+  p.rect(lx,ly,1,32,"#0a0d11");p.rect(lx-3,ly-1,7,2,"#0a0d11");p.rect(lx-2,ly+1,5,1,PAL.lamp);
+  setSnowLayer(1,W,H);
 }
 
 // ---------- Start ----------

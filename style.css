@@ -18,7 +18,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .fill{position:absolute;inset:0;width:100%;height:100%}
 
 /* Pixel-Knöpfe */
-.big,.door,.chip,#folderMenu button,.tile,.tooli,.hot{border:3px solid;border-color:var(--btn-hi) var(--btn-lo) var(--btn-lo) var(--btn-hi);
+.big,.door,.chip,#folderMenu button,.tile,.tooli{border:3px solid;border-color:var(--btn-hi) var(--btn-lo) var(--btn-lo) var(--btn-hi);
   background:var(--btn);color:var(--text);box-shadow:3px 3px 0 #000}
 .big:active,.door:active,.chip:active,#folderMenu button:active,.tile:active{
   border-color:var(--btn-lo) var(--btn-hi) var(--btn-hi) var(--btn-lo);transform:translate(1px,1px);box-shadow:2px 2px 0 #000}
@@ -155,8 +155,8 @@ body.checking .f,body.checking #calendar{background-color:rgba(208,168,58,.3);cu
 
 /* ---------- Draußen ---------- */
 .overlay.outside{justify-content:flex-start;gap:10px;padding:14px;background:#020409}
-#outBg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
-.outside > *:not(#outBg){position:relative;z-index:1}
+#outBg,#outSnow{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.outside > *:not(#outBg):not(#outSnow){position:relative;z-index:1}
 #outHead{display:flex;align-items:center;gap:14px;width:min(96vw,900px)}
 #outHead h2{font-size:22px}
 .door{min-height:46px;padding:0 14px;font:19px VT323,monospace;background:#4a3420;border-color:#7a5a38 #23170c #23170c #7a5a38}
@@ -164,12 +164,13 @@ body.checking .f,body.checking #calendar{background-color:rgba(208,168,58,.3);cu
 #carStage{flex:2;min-width:0}
 #carWrap{position:relative;width:100%;aspect-ratio:116/46}
 .carBig{width:100%;height:100%;display:block}
-.hot{position:absolute;transform:translate(-50%,-50%);min-width:104px;min-height:48px;padding:4px 8px;touch-action:none;cursor:grab;
-  font:17px VT323,monospace;text-align:center;background:rgba(20,26,23,.85)}
-.hot small{display:block;font-size:14px;opacity:.85}
-.hot.open{background:var(--mark);color:#1d1a10}
+.glow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;animation:pulse 1.6s steps(4) infinite}
+.glow.open{animation:none;opacity:1}
+@keyframes pulse{0%,100%{opacity:.2}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.glow{animation:none;opacity:.8}}
+.hot{position:absolute;touch-action:none;cursor:grab}
 .plateTag{position:absolute;transform:translate(-50%,-50%);background:#0d0d0d;color:#eee;border:2px solid #9aa2a8;
-  font:600 13px "Pixelify Sans",monospace;padding:2px 6px;box-shadow:2px 2px 0 #000}
+  font:600 13px "Pixelify Sans",monospace;padding:2px 6px;box-shadow:2px 2px 0 #000;z-index:2}
 .plateTag.noted{outline:3px solid var(--mark)}
 #table{flex:1;min-height:160px;background:#4a3322 var(--woodTex);background-size:144px 72px;border:3px solid #120f0c;
   box-shadow:4px 4px 0 #000;display:flex;align-items:center;justify-content:center;padding:14px}
@@ -180,7 +181,7 @@ body.checking .f,body.checking #calendar{background-color:rgba(208,168,58,.3);cu
 .latch.on{background:#6b5a2e;transform:translateY(-6px)}
 #panelOut{width:min(96vw,900px)}
 .compTitle{text-align:left;font:19px VT323,monospace;margin-bottom:6px;opacity:.9}
-.empty{opacity:.75;margin:10px;font:19px VT323,monospace}
+.empty{opacity:.75;margin:10px;font:19px VT323,monospace;text-shadow:2px 2px 0 #000}
 #searchMsg{min-height:24px;font:20px/1.1 VT323,monospace;max-width:720px;text-shadow:2px 2px 0 #000}
 #toolbox{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding:10px;background:#2a1f15 var(--woodTex);background-size:144px 72px;
   border:3px solid #120f0c;box-shadow:4px 4px 0 #000}

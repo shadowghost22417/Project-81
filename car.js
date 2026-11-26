@@ -8,8 +8,9 @@ function openOutside(){
   toggleCheck(false); toggleAsk(false); toggleFolderMenu(false);
   S.outArea=null; S.bagView=false; S.pendingSeize=null;
   setSearchMsg((S.cur.contraband?"„Ist das wirklich nötig, Genosse?“ ":"„Bitte sehr.“ ")+
-    "Klappen nach oben wischen, Türen zur Seite ziehen, Koffer über die Schlösser öffnen. Das Kennzeichen am Heck antippen zum Notieren.");
-  drawOutBg(); renderOutside(); $("outside").classList.add("show");
+    "Die leuchtenden Teile kannst du öffnen: Klappen nach oben wischen, Türen zur Seite ziehen. Kennzeichen am Heck antippen zum Notieren.");
+  $("outside").classList.add("show");
+  renderOutside();
 }
 function renderOutside(){
   const t=S.cur, m=CAR_MODELS[t.car.model], sh=CAR_SHAPES[t.car.model];
@@ -17,14 +18,15 @@ function renderOutside(){
   const rear=Math.max(...sh.body.map(q=>q[0]))/116*100;
   $("outTitle").textContent="Fahrzeugkontrolle";
   $("stage").style.display=S.close?"none":"";
-  $("carStage").innerHTML=`<div id="carWrap"><img class="px carBig" src="${S.carURL}" alt="Auto">${m.areas.map((a,i)=>
-    `<div class="hot ${S.outArea===i?"open":""}" data-area="${i}" style="left:${a[1][0]}%;top:${a[1][1]}%">${a[0]}<small>${
-      S.outArea===i?"offen":a[3]==="up"?"↑ nach oben wischen":"↔ zur Seite ziehen"}</small></div>`).join("")}
+  const glows=sh.zones.map((z,i)=>`<img class="px glow ${S.outArea===i?"open":""}" src="${zoneGlow(t.car.model,t.car.color,z,S.outArea===i)}" alt="">`).join("");
+  const hots=sh.zones.map((z,i)=>`<div class="hot" data-area="${i}" aria-label="${m.areas[i][0]}" style="left:${z[0]/116*100}%;top:${z[1]/46*100}%;width:${(z[2]-z[0]+1)/116*100}%;height:${(z[3]-z[1]+1)/46*100}%"></div>`).join("");
+  $("carStage").innerHTML=`<div id="carWrap"><img class="px carBig" src="${S.carURL}" alt="Auto">${glows}${hots}
     <button class="plateTag ${S.notedPlate?"noted":""}" id="plateTag" style="left:${rear-2}%;top:72%">${t.car.plate}</button></div>`;
   const sc=$("suitcase");
   sc.querySelectorAll(".latch").forEach((l,i)=>l.classList.toggle("on",!!S.latches[i]));
   sc.classList.toggle("open",S.latches[0]&&S.latches[1]);
   renderPanelOut();
+  requestAnimationFrame(drawOutBg);
 }
 function spotTile(id,s){
   const [name,type,tool]=s, st=S.spotState[id]||"";
@@ -45,21 +47,21 @@ function renderPanelOut(){
   } else if(S.outArea!==null){
     const a=m.areas[S.outArea];
     p.innerHTML=`<div class="compTitle">${a[0]}</div><div class="tiles">${a[2].map((s,i)=>spotTile(`c:${S.outArea}:${i}`,s)).join("")}</div>`;
-  } else p.innerHTML=`<p class="empty">Öffne eine Klappe, eine Tür oder den Koffer.</p>`;
+  } else p.innerHTML=`<p class="empty">Öffne ein leuchtendes Teil des Autos oder den Koffer.</p>`;
 }
 
-// ---------- Klappen, Türen, Kennzeichen ----------
+// ---------- Klappen und Türen per Geste ----------
 $("carStage").addEventListener("pointerdown",e=>{
   const h=e.target.closest(".hot"); if(!h||S.busy) return;
   e.preventDefault();
   const i=Number(h.dataset.area), x0=e.clientX, y0=e.clientY;
   const up=ev=>{
     window.removeEventListener("pointerup",up);
-    const dx=ev.clientX-x0, dy=ev.clientY-y0, g=CAR_MODELS[S.cur.car.model].areas[i][3];
-    const ok=g==="up"?(dy<-35&&Math.abs(dy)>Math.abs(dx)):(Math.abs(dx)>35&&Math.abs(dx)>Math.abs(dy));
-    if(!ok) return setSearchMsg(g==="up"?"Wische nach oben, um die Klappe zu öffnen.":"Ziehe zur Seite, um die Tür zu öffnen.");
+    const a=CAR_MODELS[S.cur.car.model].areas[i], g=a[3], dx=ev.clientX-x0, dy=ev.clientY-y0;
+    const ok=g==="up"?(dy<-30&&Math.abs(dy)>Math.abs(dx)):(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy));
+    if(!ok) return setSearchMsg(a[0]+": "+(g==="up"?"nach oben wischen, um die Klappe zu öffnen.":"zur Seite ziehen, um die Tür zu öffnen."));
     if(S.outArea!==i){S.outArea=i;S.bagView=false;S.pendingSeize=null;S.min+=COST.area;updateHUD()}
-    setSearchMsg("Tippe eine Stelle an, um nachzusehen, oder zieh ein Werkzeug aus dem Kasten darauf.");
+    setSearchMsg(a[0]+" ist offen. Tippe eine Stelle an, um nachzusehen, oder zieh ein Werkzeug aus dem Kasten darauf.");
     renderOutside();
   };
   window.addEventListener("pointerup",up);
