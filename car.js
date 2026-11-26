@@ -8,16 +8,19 @@ function openOutside(){
   toggleCheck(false); toggleAsk(false); toggleFolderMenu(false);
   S.outArea=null; S.bagView=false; S.pendingSeize=null;
   setSearchMsg((S.cur.contraband?"„Ist das wirklich nötig, Genosse?“ ":"„Bitte sehr.“ ")+
-    "Öffne Klappen und Türen mit einer Wischbewegung, den Koffer über die Schlösser.");
-  renderOutside(); $("outside").classList.add("show");
+    "Klappen nach oben wischen, Türen zur Seite ziehen, Koffer über die Schlösser öffnen. Das Kennzeichen am Heck antippen zum Notieren.");
+  drawOutBg(); renderOutside(); $("outside").classList.add("show");
 }
 function renderOutside(){
-  const t=S.cur, m=CAR_MODELS[t.car.model];
-  $("outTitle").textContent=m.name+", "+t.car.plate;
+  const t=S.cur, m=CAR_MODELS[t.car.model], sh=CAR_SHAPES[t.car.model];
+  if(!S.carURL) S.carURL=carSprite(t.car.model,t.car.color,false).toDataURL();
+  const rear=Math.max(...sh.body.map(q=>q[0]))/116*100;
+  $("outTitle").textContent="Fahrzeugkontrolle";
   $("stage").style.display=S.close?"none":"";
-  $("carStage").innerHTML=`<div id="carWrap">${carSVG(t.car.model,t.car.color,t.car.low)}${m.areas.map((a,i)=>
+  $("carStage").innerHTML=`<div id="carWrap"><img class="px carBig" src="${S.carURL}" alt="Auto">${m.areas.map((a,i)=>
     `<div class="hot ${S.outArea===i?"open":""}" data-area="${i}" style="left:${a[1][0]}%;top:${a[1][1]}%">${a[0]}<small>${
-      S.outArea===i?"offen":a[3]==="up"?"↑ nach oben wischen":"↔ zur Seite ziehen"}</small></div>`).join("")}</div>`;
+      S.outArea===i?"offen":a[3]==="up"?"↑ nach oben wischen":"↔ zur Seite ziehen"}</small></div>`).join("")}
+    <button class="plateTag ${S.notedPlate?"noted":""}" id="plateTag" style="left:${rear-2}%;top:72%">${t.car.plate}</button></div>`;
   const sc=$("suitcase");
   sc.querySelectorAll(".latch").forEach((l,i)=>l.classList.toggle("on",!!S.latches[i]));
   sc.classList.toggle("open",S.latches[0]&&S.latches[1]);
@@ -45,7 +48,7 @@ function renderPanelOut(){
   } else p.innerHTML=`<p class="empty">Öffne eine Klappe, eine Tür oder den Koffer.</p>`;
 }
 
-// ---------- Klappen und Türen per Geste ----------
+// ---------- Klappen, Türen, Kennzeichen ----------
 $("carStage").addEventListener("pointerdown",e=>{
   const h=e.target.closest(".hot"); if(!h||S.busy) return;
   e.preventDefault();
@@ -60,6 +63,12 @@ $("carStage").addEventListener("pointerdown",e=>{
     renderOutside();
   };
   window.addEventListener("pointerup",up);
+});
+$("carStage").addEventListener("click",e=>{
+  if(!e.target.closest("#plateTag")||S.busy) return;
+  if(!S.notedPlate){S.notedPlate=true;S.min+=1;updateHUD();renderProtocol()}
+  setSearchMsg("Kennzeichen notiert: "+S.cur.car.plate+". Es steht jetzt im Protokoll auf deinem Tisch.");
+  renderOutside();
 });
 
 // ---------- Koffer ----------

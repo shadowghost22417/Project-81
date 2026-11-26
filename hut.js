@@ -1,14 +1,9 @@
-// Hütte: Wanduhr, Kalender, Notizzettel, Mappe, Rotstift, Handschellen
+// Hütte: Uhr, Kalender, Notizzettel, Mappe, Rotstift, Handschellen
 
 const MONTHS_PL=["STYCZEŃ","LUTY","MARZEC","KWIECIEŃ","MAJ","CZERWIEC","LIPIEC","SIERPIEŃ","WRZESIEŃ","PAŹDZIERNIK","LISTOPAD","GRUDZIEŃ"];
 
-// ---------- Wand ----------
-$("ticks").innerHTML=Array.from({length:12},(_,i)=>
-  `<line x1="50" y1="8" x2="50" y2="${i%3?13:17}" stroke="#3a3328" stroke-width="${i%3?1.5:3}" transform="rotate(${i*30} 50 50)"/>`).join("");
 function updateWall(){
-  const h=Math.floor(S.min/60)%12, m=S.min%60;
-  $("mHand").setAttribute("transform",`rotate(${m*6} 50 50)`);
-  $("hHand").setAttribute("transform",`rotate(${h*30+m*.5} 50 50)`);
+  drawClock(S.min);
   $("calMonth").textContent=MONTHS_PL[S.date.getMonth()];
   $("calDay").textContent=S.date.getDate();
   $("calYear").textContent=S.date.getFullYear();
@@ -23,7 +18,7 @@ function tearCalendar(){
 }
 function setHint(m){$("note").textContent=m||""}
 
-// ---------- Eigene Unterlagen in der Mappe ----------
+// ---------- Eigene Unterlagen in der Teczka ----------
 function renderRules(){
   return placeDoc("rules keep",`<h3>${T("Instrukcja – dzień "+S.day,"Dienstanweisung")}</h3><ol>
     <li>Ausreise nur mit Dowód, Paszport und Przepustka.</li>
@@ -32,7 +27,7 @@ function renderRules(){
     <li>Die Ausweisnummer im Paszport muss stimmen.</li>
     <li>Die Przepustka muss heute gültig sein.</li>
     <li>Das Foto muss die Person zeigen.</li>
-    <li>Kennzeichen und Modell wie im Dowód rejestracyjny.</li>
+    <li>Kennzeichen (draußen ablesen) und Modell (siehe Fahrzeugtypen) wie im Dowód rejestracyjny.</li>
     <li>Fremdes Auto nur mit Upoważnienie.</li>
     <li>Gepäck muss vollständig deklariert sein.</li>
     <li>Aussagen müssen zu den Papieren passen.</li>
@@ -40,8 +35,12 @@ function renderRules(){
 }
 function renderWanted(){
   return placeDoc("wanted keep",`<h3>${T("List gończy","Fahndungsliste")}</h3>${
-    S.wantedList.map((w,i)=>`<div class="row wrow"><div class="photo f" data-k="wanted.${i}">${faceSVG(w.face,true)}</div>
+    S.wantedList.map((w,i)=>`<div class="row wrow"><div class="photo f" data-k="wanted.${i}"><img class="px" src="${facePhoto(w.face)}" alt=""></div>
       <div>${w.name}<br><small>${w.reason}</small></div></div>`).join("")}`,0.14,60,onOwnDrop);
+}
+function renderTypes(){
+  return placeDoc("types keep",`<h3>${T("Typy pojazdów","Fahrzeugtypen")}</h3><div class="types">${
+    CAR_MODELS.map((m,i)=>`<figure><img class="px" src="${carPhoto(i)}" alt=""><figcaption>${m.name}</figcaption></figure>`).join("")}</div>`,0.3,40,onOwnDrop);
 }
 function logHTML(){
   return `<h3>${T("Dziennik służby","Dienstbuch")}</h3><small>Datum</small><br>${fmt(S.date)}<br>
@@ -50,24 +49,29 @@ function logHTML(){
 function renderLog(){return placeDoc("log keep",logHTML(),0.02,180,onOwnDrop)}
 function updateLog(){const el=$("own-log");if(el) el.innerHTML=logHTML()}
 
-const OWN_DOCS={rules:["Instrukcja",renderRules],wanted:["List gończy",renderWanted],log:["Dziennik służby",renderLog]};
+const OWN_DOCS={rules:["Instrukcja",renderRules],wanted:["List gończy",renderWanted],
+  types:["Typy pojazdów",renderTypes],log:["Dziennik służby",renderLog]};
 function takeOut(k){
   let el=$("own-"+k);
   if(el){el.style.zIndex=++S.z;return}
   el=OWN_DOCS[k][1](); el.id="own-"+k; markSelected();
 }
+function putBack(k){const el=$("own-"+k);if(el){el.remove();toast(OWN_DOCS[k][0]+" liegt wieder in der Teczka.","info")}}
 function onOwnDrop(el,ev){
-  if(ev&&pointIn(ev.clientX,ev.clientY,$("folder"))){el.remove();toggleFolderMenu(false);toast("In die Mappe gelegt.","info")}
+  if(ev&&pointIn(ev.clientX,ev.clientY,$("folder"))){putBack(el.id.replace("own-",""));toggleFolderMenu(false)}
 }
 function toggleFolderMenu(force){
   const m=$("folderMenu"), show=typeof force==="boolean"?force:!m.classList.contains("show");
-  if(show) m.innerHTML=Object.entries(OWN_DOCS).map(([k,d])=>`<button data-own="${k}">${d[0]}${$("own-"+k)?" (auf dem Tisch)":""}</button>`).join("");
+  if(show) m.innerHTML=Object.entries(OWN_DOCS).map(([k,d])=>$("own-"+k)
+    ?`<button data-put="${k}">${d[0]} zurücklegen</button>`:`<button data-own="${k}">${d[0]} herausnehmen</button>`).join("");
   m.classList.toggle("show",show); $("folder").classList.toggle("open",show);
 }
 $("folder").addEventListener("click",()=>{if(!S.checkMode&&!S.busy) toggleFolderMenu()});
 $("folderMenu").addEventListener("click",e=>{
-  const b=e.target.closest("[data-own]"); if(!b) return;
-  takeOut(b.dataset.own); toggleFolderMenu(false);
+  const o=e.target.closest("[data-own]"), p=e.target.closest("[data-put]");
+  if(o) takeOut(o.dataset.own);
+  if(p) putBack(p.dataset.put);
+  if(o||p) toggleFolderMenu(false);
 });
 
 // ---------- Rotstift ----------
@@ -80,7 +84,9 @@ function freeDrag(el,onDrop,canStart){
     e.preventDefault(); el.setPointerCapture(e.pointerId);
     const r=el.getBoundingClientRect(), ox=e.clientX-r.left, oy=e.clientY-r.top;
     const ghost=el.cloneNode(true); ghost.removeAttribute("id"); ghost.classList.add("dragGhost");
-    ghost.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;margin:0;z-index:300000;pointer-events:none`;
+    ghost.style.position="fixed"; ghost.style.left=r.left+"px"; ghost.style.top=r.top+"px";
+    ghost.style.width=r.width+"px"; ghost.style.height=r.height+"px"; ghost.style.margin="0";
+    ghost.style.zIndex="300000"; ghost.style.pointerEvents="none"; ghost.style.right="auto"; ghost.style.bottom="auto";
     document.body.appendChild(ghost); el.style.opacity=".3";
     const move=ev=>{ghost.style.left=(ev.clientX-ox)+"px";ghost.style.top=(ev.clientY-oy)+"px"};
     const up=ev=>{

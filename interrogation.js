@@ -1,4 +1,4 @@
-// Gespräch mit der Person und Vernehmungsprotokoll
+// Gespräch mit der Person und Protokoll
 
 const QUESTIONS=[
   ["dest","Wohin fahren Sie?"],
@@ -37,8 +37,10 @@ function renderProtocol(){
   if(S.asked.purpose) rows.push(`<small>Zweck</small><br>${a.purpose}`);
   if(S.asked.declare) rows.push(`<small>Anzumelden</small><br>${a.declare}`);
   if(S.asked.stay) rows.push(`<small>Aufenthalt</small><br>${a.stay}`);
-  if(a.nervous) rows.push(`<small>Bemerkung</small><br>wirkt nervös`);
-  const html=`<h3>${T("Protokół przesłuchania","Vernehmungsprotokoll")}</h3>${rows.join("<br>")}`;
+  if(Object.keys(S.asked).length&&a.nervous) rows.push(`<small>Bemerkung</small><br>wirkt nervös`);
+  if(S.notedPlate) rows.push(`<small>Kennzeichen (abgelesen)</small><br><span class="f" data-k="note.plate">${S.cur.car.plate}</span>`);
+  if(!rows.length) return;
+  const html=`<h3>${T("Protokół","Protokoll")}</h3>${rows.join("<br>")}`;
   let el=$("protocol");
   if(!el){el=placeDoc("proto",html,0.8,120);el.id="protocol"}
   else{el.innerHTML=html;clampDoc(el)}

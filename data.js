@@ -1,5 +1,5 @@
 // Einstellungen, Daten und Hilfsfunktionen
-const DAY_START=16*60, DAY_END=22*60, DECIDE_COST=30, ASK_COST=3;
+const DAY_START=16*60, DAY_END=22*60, DECIDE_COST=30, ASK_COST=3, WRONG_CHECK=2;
 const COST={look:5,knock:3,area:2};
 const DAMAGE=30, WRONG_SEIZE=20, WRONG_ARREST=200;
 const TOOL_SHORT={knife:"Messer",screw:"Schraubenzieher",bar:"Brecheisen"};
@@ -26,44 +26,33 @@ const WANTED_REASONS=["Solidarność-Aktivist, untergetaucht","Druck verbotener 
 const SKINS=["#e8c4a0","#d9ad86","#f0d2b4","#c99a72"];
 const HAIRS=["#2b2018","#5a3b22","#8a6a3a","#999999","#c9a35a"];
 const COATS=["#4a4a52","#5b4636","#3d4a3a","#6b2f2f"];
-const CAR_COLORS=["#c8b26a","#8fa3b0","#a8423a","#6f8a5b","#d6d0c0","#3f5a7a"];
+const CAR_COLORS=["#c8b26a","#8fa3b0","#a8423a","#6f8a5b","#d6d0c0","#3f5a7a","#8a7a5c"];
 
 const BAG_ITEMS=[["Bohnenkaffee","Pakete",1,3],["Wodka","Flaschen",1,2],["Zigaretten","Stangen",1,2],["Kleidung","Stück",2,8],
   ["Konserven","Dosen",1,6],["Bücher","Stück",1,3],["Schokolade","Tafeln",1,5]];
-// Verstecke: [Name, Art, Werkzeug]  open = offen, dark = Taschenlampe, panel = verschlossen
 const BAG_SPOTS=[["Kofferboden","panel","bar"],["Futter","panel","knife"],["Seitentasche","open"],["Kulturbeutel","open"]];
 const CABIN=[["Handschuhfach","open"],["Unter den Sitzen","dark"],["Rücksitzpolster","panel","knife"],["Türverkleidung","panel","screw"]];
 const FRONT_ENGINE=[["Luftfilter","open"],["Hinter dem Kühler","dark"],["Batteriekasten","panel","screw"]];
-// Bereiche: [Name, Position, Verstecke, Geste]  up = nach oben wischen, side = zur Seite ziehen
+// Bereiche: [Name, Position auf dem Auto in %, Verstecke, Geste]
 const CAR_MODELS=[
-  {name:"Fiat 126p",short:"126p",from:1973,r:20,wheels:[130,270],
-    body:"M90 150 L90 115 Q92 100 110 98 L130 96 Q145 58 175 54 L235 54 Q262 58 275 96 L295 100 Q310 104 310 120 L310 150 Z",
-    win:["M140 96 Q152 66 178 64 L200 64 L200 96 Z","M208 64 L232 64 Q252 68 264 96 L208 96 Z"],
-    areas:[["Kofferraum vorne",[27,58],[["Kofferraumboden","open"],["Reserverad","panel","bar"],["Hinter der Verkleidung","dark"]],"up"],
-      ["Innenraum",[50,36],CABIN,"side"],
-      ["Motorraum hinten",[73,58],[["Luftfilterkasten","open"],["Neben dem Motor","dark"],["Motorabdeckung","panel","screw"]],"up"]]},
-  {name:"Polski Fiat 125p",short:"125p",from:1967,r:22,wheels:[100,300],
-    body:"M40 150 L40 112 L48 104 L110 100 L140 62 L250 62 L285 100 L352 104 L360 112 L360 150 Z",
-    win:["M148 98 L168 70 L205 70 L205 98 Z","M213 70 L245 70 L272 98 L213 98 Z"],
-    areas:[["Motorraum vorne",[16,58],FRONT_ENGINE,"up"],["Innenraum",[50,36],CABIN,"side"],
-      ["Kofferraum hinten",[84,58],[["Kofferraumboden","open"],["Reserveradmulde","dark"],["Seitenverkleidung","panel","screw"]],"up"]]},
-  {name:"FSO Polonez",short:"Polonez",from:1978,r:22,wheels:[105,300],
-    body:"M40 150 L40 118 L52 108 L120 100 L160 62 L270 60 L350 100 L360 118 L360 150 Z",
-    win:["M166 98 L180 70 L220 70 L220 98 Z","M228 70 L266 68 L320 98 L228 98 Z"],
-    areas:[["Motorraum vorne",[16,58],FRONT_ENGINE,"up"],["Innenraum",[50,36],CABIN,"side"],
-      ["Heckklappe",[84,58],[["Ladeboden","open"],["Unter der Hutablage","dark"],["Seitenverkleidung","panel","screw"]],"up"]]},
-  {name:"FSO Syrena 105",short:"Syrena",from:1972,r:22,wheels:[110,290],
-    body:"M50 150 L50 120 Q55 96 100 94 Q130 56 190 54 Q260 54 290 92 Q345 98 350 125 L350 150 Z",
-    win:["M140 92 Q160 64 195 62 L200 92 Z","M208 62 Q252 64 275 92 L208 92 Z"],
-    areas:[["Motorraum vorne",[18,58],[["Werkzeugkiste","open"],["Hinter dem Kühler","dark"],["Kotflügel innen","panel","bar"]],"up"],
-      ["Innenraum",[50,36],CABIN,"side"],
-      ["Kofferraum hinten",[82,58],[["Kofferraumboden","open"],["Reserverad","panel","bar"],["Ecke hinten","dark"]],"up"]]},
-  {name:"FS Lublin Żuk",short:"Żuk",from:1959,r:22,wheels:[100,300],
-    body:"M40 150 L40 100 L70 60 L360 60 L360 150 Z",
-    win:["M78 98 L96 68 L140 68 L140 98 Z"],
-    areas:[["Fahrerhaus",[22,38],[["Handschuhfach","open"],["Unter der Sitzbank","dark"],["Sitzbank","panel","knife"],["Türverkleidung","panel","screw"]],"side"],
-      ["Motor",[22,76],[["Motorabdeckung","panel","screw"],["Neben dem Motor","dark"]],"up"],
-      ["Laderaum",[66,50],[["Kisten","open"],["Ecken hinten","dark"],["Ladeboden","panel","bar"],["Seitenwand","panel","screw"]],"side"]]}
+  {name:"Fiat 126p",from:1973,areas:[
+    ["Kofferraum vorne",[25,58],[["Kofferraumboden","open"],["Reserverad","panel","bar"],["Hinter der Verkleidung","dark"]],"up"],
+    ["Innenraum",[52,34],CABIN,"side"],
+    ["Motorraum hinten",[79,58],[["Luftfilterkasten","open"],["Neben dem Motor","dark"],["Motorabdeckung","panel","screw"]],"up"]]},
+  {name:"Polski Fiat 125p",from:1967,areas:[
+    ["Motorraum vorne",[14,58],FRONT_ENGINE,"up"],["Innenraum",[52,34],CABIN,"side"],
+    ["Kofferraum hinten",[88,56],[["Kofferraumboden","open"],["Reserveradmulde","dark"],["Seitenverkleidung","panel","screw"]],"up"]]},
+  {name:"FSO Polonez",from:1978,areas:[
+    ["Motorraum vorne",[15,60],FRONT_ENGINE,"up"],["Innenraum",[52,34],CABIN,"side"],
+    ["Heckklappe",[88,54],[["Ladeboden","open"],["Unter der Hutablage","dark"],["Seitenverkleidung","panel","screw"]],"up"]]},
+  {name:"FSO Syrena 105",from:1972,areas:[
+    ["Motorraum vorne",[17,60],[["Werkzeugkiste","open"],["Hinter dem Kühler","dark"],["Kotflügel innen","panel","bar"]],"up"],
+    ["Innenraum",[52,32],CABIN,"side"],
+    ["Kofferraum hinten",[85,58],[["Kofferraumboden","open"],["Reserverad","panel","bar"],["Ecke hinten","dark"]],"up"]]},
+  {name:"FS Lublin Żuk",from:1959,areas:[
+    ["Fahrerhaus",[16,36],[["Handschuhfach","open"],["Unter der Sitzbank","dark"],["Sitzbank","panel","knife"],["Türverkleidung","panel","screw"]],"side"],
+    ["Motor",[16,74],[["Motorabdeckung","panel","screw"],["Neben dem Motor","dark"]],"up"],
+    ["Laderaum",[62,46],[["Kisten","open"],["Ecken hinten","dark"],["Ladeboden","panel","bar"],["Seitenwand","panel","screw"]],"side"]]}
 ];
 
 const FLAWS={
@@ -92,8 +81,8 @@ const idNr=()=>pick(["AB","CD","EG","KR","WR"])+" "+rint(100000,999999);
 const randPos=()=>({x:.25+Math.random()*.5,y:.3+Math.random()*.4});
 
 function randomFace(female){
-  return {skin:pick(SKINS),hair:pick(HAIRS),coat:pick(COATS),hat:Math.random()<.35,
-    beard:!female&&Math.random()<.3,glasses:Math.random()<.25};
+  return {skin:pick(SKINS),hair:pick(HAIRS),coat:pick(COATS),hat:Math.random()<.4,
+    beard:!female&&Math.random()<.3,glasses:Math.random()<.25,female};
 }
 function randomName(exclude){
   let n;
@@ -138,11 +127,11 @@ function makeTraveler(date,wantedList){
   const first=female?pick(FIRST_F):pick(FIRST_M), name=first+" "+LAST[li][female?1:0];
   const face=W?W.face:randomFace(female), ci=rint(0,CITIES.length-1), mi=rint(0,CAR_MODELS.length-1);
   const plate=PLATE_PREFIX[ci]+" "+rint(1000,9999);
-  const t={name,female,face,photoFace:face,passName:name,permitName:name,
+  const t={name,female,face,photoFace:face,passName:name,permitName:name,seed:rint(1,99999),
     birth:new Date(rint(1920,1963),rint(0,11),rint(1,28)),city:CITIES[ci],dest:pick(DESTS),
     id:idNr(),passNr:"ZA "+rint(1000000,9999999),passExpiry:addDays(date,rint(30,1500)),
     permitUntil:addDays(date,rint(0,30)),hasPermit:true,
-    car:{model:mi,regModel:mi,plate,regPlate:plate,owner:name,color:pick(CAR_COLORS),year:rint(CAR_MODELS[mi].from,1981),low:false},
+    car:{model:mi,regModel:mi,plate,regPlate:plate,owner:name,color:pick(CAR_COLORS),year:rint(CAR_MODELS[mi].from,1981)},
     auth:false,bag:[],flaw:null,wanted:wi,contraband:null,falseSpot:null,falseHintPos:null,history:[]};
   t.passId=t.id;
   for(let i=rint(0,3);i>0;i--) t.history.push({place:pick(BORDER_PLACES),date:addDays(date,-rint(30,2500))});
@@ -185,7 +174,6 @@ function makeTraveler(date,wantedList){
       t.contraband={spot:"i:"+k,item:it.name,desc:`${it.count} ${it.unit} ${it.name}, ${it.declared?"nur "+it.declared+" deklariert":"nicht deklariert"}`};
     }
   }
-  t.car.low=(!!t.contraband&&t.contraband.spot.startsWith("c:")&&Math.random()<.5)||Math.random()<.08;
   if(Math.random()<.2){
     const p=panelSpots(t).filter(id=>!t.contraband||t.contraband.spot!==id);
     if(p.length){t.falseSpot=pick(p);t.falseHintPos=randPos()}

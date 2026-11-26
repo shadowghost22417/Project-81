@@ -1,31 +1,8 @@
 // Dokumente, Pass, Stempel, Lupe und Rotstift
 
-const PAGE_W=190, ZOOM=2.2;
+const PAGE_W=196, ZOOM=2.2;
 const T=(pl,de)=>pl+(S.day===1?`<span class="tr">${de}</span>`:"");
-
-function faceSVG(f,photo){
-  return `<svg viewBox="0 0 100 120" preserveAspectRatio="xMidYMax meet">
-    <path d="M8 120 Q14 86 50 84 Q86 86 92 120Z" fill="${f.coat}"/>
-    <rect x="42" y="76" width="16" height="12" fill="${f.skin}"/>
-    <ellipse cx="50" cy="52" rx="25" ry="30" fill="${f.skin}"/>
-    <path d="M25 50 Q26 18 50 18 Q74 18 75 50 Q70 32 50 30 Q30 32 25 50Z" fill="${f.hair}"/>
-    <circle cx="41" cy="52" r="3" fill="#222"/><circle cx="59" cy="52" r="3" fill="#222"/>
-    ${f.glasses?`<g fill="none" stroke="#222" stroke-width="2"><circle cx="41" cy="52" r="7"/><circle cx="59" cy="52" r="7"/><line x1="48" y1="52" x2="52" y2="52"/></g>`:""}
-    <path d="M42 68 Q50 72 58 68" stroke="#6a3b2b" stroke-width="2" fill="none"/>
-    ${f.beard?`<path d="M28 60 Q30 86 50 86 Q70 86 72 60 Q66 76 50 76 Q34 76 28 60Z" fill="${f.hair}"/>`:""}
-    ${f.hat&&!photo?`<rect x="22" y="12" width="56" height="20" rx="8" fill="#4b3a2a"/>`:""}
-  </svg>`;
-}
-const photoHTML=(face,key)=>`<div class="photo f" data-k="${key}">${faceSVG(face,true)}</div>`;
-
-function carSVG(mi,color,low){
-  const m=CAR_MODELS[mi], dy=low?7:0;
-  return `<svg viewBox="0 0 400 200"><ellipse cx="200" cy="176" rx="170" ry="8" fill="rgba(0,0,0,.25)"/>
-    <g transform="translate(0,${dy})"><path d="${m.body}" fill="${color}" stroke="#2e2a1e" stroke-width="3"/>
-    ${m.win.map(w=>`<path d="${w}" fill="#9fb6c2" stroke="#2e2a1e" stroke-width="2"/>`).join("")}</g>
-    ${m.wheels.map(x=>`<circle cx="${x}" cy="152" r="${m.r}" fill="#222"/><circle cx="${x}" cy="152" r="${m.r*.4}" fill="#888"/>`).join("")}
-  </svg>`;
-}
+const photoHTML=(face,key)=>`<div class="photo f" data-k="${key}"><img class="px" src="${facePhoto(face)}" alt=""></div>`;
 
 // ---------- Ziehen auf dem Tisch ----------
 function makeDraggable(el,onDrop,handle,onMove){
@@ -116,7 +93,7 @@ function renderPass(){
   const el=$("passport"), t=S.cur, p=S.passSpread, top=s=>`<div class="ptop">${s}</div>`;
   el.classList.toggle("closed",p===0);
   let inner;
-  if(p===0) inner=`<div class="pg cover">${top("")}<div class="crest"></div>POLSKA<br>RZECZPOSPOLITA<br>LUDOWA<b>PASZPORT</b>${
+  if(p===0) inner=`<div class="pg cover">${top("")}<img class="px crest" src="${SPR.crest}" alt="">POLSKA<br>RZECZPOSPOLITA<br>LUDOWA<b>PASZPORT</b>${
     S.day===1?'<div class="swipe">Reisepass</div>':""}</div>`;
   else if(p===1) inner=`<div class="pg left">${top("Paszport")}<div class="row">${photoHTML(t.photoFace,"pass.photo")}<div>
       <small>Name</small><br><span class="f" data-k="pass.name">${t.passName}</span><br>
@@ -182,18 +159,18 @@ function setupStamps(){document.querySelectorAll(".stamp").forEach(st=>makeDragg
 function homeStamps(){
   const d=$("desk");
   document.querySelectorAll(".stamp").forEach((st,i)=>{
-    st.style.left=(d.clientWidth-128)+"px"; st.style.top=(d.clientHeight-74-i*86)+"px"; st.style.zIndex=100000;
+    st.style.left=(d.clientWidth-134)+"px"; st.style.top=(d.clientHeight-84-i*86)+"px"; st.style.zIndex=100000;
   });
 }
 function onStampDrop(st){
-  const area=$("stampArea"), r=st.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.bottom-4;
+  const area=$("stampArea"), r=st.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.bottom-6;
   if(!area||S.flipping) toast("Blättere im Pass bis zur Stempelseite.","info");
   else{
     const a=area.getBoundingClientRect();
     if(cx>a.left&&cx<a.right&&cy>a.top&&cy<a.bottom){
       if(S.mark) toast("Der Pass ist bereits gestempelt.","info");
       else{
-        S.mark={type:st.dataset.type,x:(cx-a.left)/a.width*100,y:(cy-a.top)/a.height*100,rot:rint(-14,14)};
+        S.mark={type:st.dataset.type,x:(cx-a.left)/a.width*100,y:(cy-a.top)/a.height*100,rot:[-6,-3,0,3,6][rint(0,4)]};
         area.innerHTML=imprintHTML(S.mark);
         const ir=area.firstElementChild.getBoundingClientRect(); let dx=0,dy=0;
         if(ir.left<a.left) dx=a.left-ir.left; else if(ir.right>a.right) dx=a.right-ir.right;
@@ -209,7 +186,7 @@ function onStampDrop(st){
 // ---------- Lupe ----------
 let lensQueued=false;
 function setupLens(){makeDraggable($("lens"),updateLens,null,requestLens);homeLens();setInterval(updateLens,800)}
-function homeLens(){const d=$("desk"),l=$("lens");l.style.left=(d.clientWidth-300)+"px";l.style.top=(d.clientHeight-170)+"px";l.style.zIndex=99999}
+function homeLens(){const d=$("desk"),l=$("lens");l.style.left=(d.clientWidth-310)+"px";l.style.top=(d.clientHeight-180)+"px";l.style.zIndex=99999}
 function requestLens(){if(lensQueued)return;lensQueued=true;requestAnimationFrame(()=>{lensQueued=false;updateLens()})}
 function updateLens(){
   const view=$("lensView"); if(!view) return;
@@ -232,7 +209,7 @@ function toggleCheck(force){
   document.body.classList.toggle("checking",S.checkMode);
   $("pencil").classList.toggle("inhand",S.checkMode);
   if(S.checkMode){toggleAsk(false);toggleFolderMenu(false)}
-  setHint(S.checkMode?"Rotstift in der Hand: Kreise zwei Angaben ein, die nicht zusammenpassen. Stift antippen zum Weglegen.":"");
+  setHint(S.checkMode?"Rotstift in der Hand: Kreise zwei Angaben ein, die nicht zusammenpassen. Ein falscher Verdacht kostet 2 Minuten. Stift antippen zum Weglegen.":"");
 }
 function markSelected(){
   document.querySelectorAll("[data-k]").forEach(e=>{
@@ -256,8 +233,8 @@ function comparePair(a,b){
     return t.auth?"auth":{forgery:true,text:"Fremdes Auto ohne Upoważnienie."};
   }
   if(has("id.nr","pass.nr")) return val[a]!==val[b]?{forgery:true,text:"Die Ausweisnummern stimmen nicht überein."}:null;
-  if(has("reg.plate","car.plate")) return c.plate!==c.regPlate?{forgery:true,text:"Das Kennzeichen passt nicht zum Dowód rejestracyjny."}:null;
-  if(has("reg.model","car.model")) return c.model!==c.regModel?{forgery:true,text:"Das Auto ist ein anderes Modell als im Dowód rejestracyjny."}:null;
+  if(has("note.plate","reg.plate")) return c.plate!==c.regPlate?{forgery:true,text:"Das abgelesene Kennzeichen passt nicht zum Dowód rejestracyjny."}:null;
+  if(has("car","reg.model")) return c.model!==c.regModel?{forgery:true,text:"Das Auto vor der Hütte ist ein anderes Modell als im Dowód rejestracyjny."}:null;
   if(has("ans.dest","permit.dest")) return t.answers.dest!==t.dest?{forgery:true,text:"Die Aussage zum Reiseziel widerspricht der Przepustka."}:null;
   if(has("ans.owner","reg.owner")) return t.answers.claimOwner!==c.owner?{forgery:true,text:"Die Aussage zum Halter widerspricht dem Dowód rejestracyjny."}:null;
   if((isPhoto(a)&&b==="face")||(isPhoto(b)&&a==="face")) return t.flaw==="photo"?{forgery:true,text:"Das Foto zeigt eine andere Person."}:null;
@@ -275,7 +252,7 @@ document.addEventListener("click",e=>{
   const res=comparePair(S.sel[0],S.sel[1]);
   if(res==="none") toast("Diese Angaben kann man nicht vergleichen.","info");
   else if(res==="auth") toast("Fremdes Auto, aber es liegt eine Upoważnienie vor.","info");
-  else if(!res) toast("Kein Widerspruch.","info");
+  else if(!res){S.min+=WRONG_CHECK;updateHUD();toast("Kein Widerspruch. Das hat "+WRONG_CHECK+" Minuten gekostet.","info")}
   else{
     toast("Unstimmigkeit: "+res.text,"bad");
     S.sel.forEach(x=>{if(!S.proven.includes(x))S.proven.push(x)});

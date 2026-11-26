@@ -7,6 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Grenzposten Zgorzelec 1981</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,43 +17,31 @@
 <div id="game">
   <div id="top">
     <div id="window">
+      <canvas id="winCanvas" class="px fill"></canvas>
+      <canvas id="snowCanvas" class="px fill"></canvas>
+      <div id="carView" class="hit" data-k="car" aria-label="Auto"></div>
+      <div id="traveler" class="hit" data-k="face" aria-label="Reisende Person"></div>
       <div id="speech"></div>
-      <div id="carView">
-        <div id="carSvg"></div>
-        <span id="carBadge" class="badge f" data-k="car.model"></span>
-        <span id="carPlate" class="plate f" data-k="car.plate"></span>
-      </div>
-      <div id="traveler" data-k="face"></div>
       <div id="askMenu"></div>
       <div id="queue"></div>
     </div>
     <div id="wall">
-      <div id="clock">
-        <svg viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="46" fill="#f1ead6" stroke="#3a3328" stroke-width="5"/>
-          <g id="ticks"></g>
-          <line id="hHand" x1="50" y1="50" x2="50" y2="28" stroke="#222" stroke-width="5" stroke-linecap="round"/>
-          <line id="mHand" x1="50" y1="50" x2="50" y2="14" stroke="#222" stroke-width="3" stroke-linecap="round"/>
-          <circle cx="50" cy="50" r="3.5" fill="#b0262c"/>
-        </svg>
-      </div>
+      <canvas id="wallCanvas" class="px fill"></canvas>
+      <canvas id="clockCanvas" class="px" width="34" height="34"></canvas>
       <div id="calendar" data-k="date"><div id="calMonth"></div><div id="calDay"></div><div id="calYear"></div></div>
       <div id="note"></div>
     </div>
   </div>
   <div id="desk">
-    <div id="slot">Durchreiche</div>
-    <div id="folder"><b>Teczka</b><small>Dienstmappe</small></div>
+    <canvas id="deskLight" class="px fill"></canvas>
+    <div id="slot" class="sprite">Durchreiche</div>
+    <div id="folder" class="sprite"><span>Teczka</span></div>
     <div id="folderMenu"></div>
-    <div id="cuffs" aria-label="Handschellen">
-      <svg viewBox="0 0 120 60"><circle cx="28" cy="30" r="20" fill="none" stroke="#9aa0a6" stroke-width="7"/>
-      <circle cx="92" cy="30" r="20" fill="none" stroke="#9aa0a6" stroke-width="7"/>
-      <path d="M48 30 h24" stroke="#6b7177" stroke-width="5" stroke-dasharray="6 3"/></svg>
-    </div>
-    <div id="pencil" aria-label="Rotstift"><div class="pbody"></div></div>
-    <div id="lens"><div id="lensView"></div></div>
-    <div class="stamp ok" data-type="ok">ZEZWOLONO</div>
-    <div class="stamp no" data-type="no">ODMOWA</div>
+    <div id="cuffs" class="sprite" aria-label="Handschellen"></div>
+    <div id="pencil" class="sprite" aria-label="Rotstift"></div>
+    <div id="lens" class="sprite"><div id="lensView"></div></div>
+    <div class="stamp ok sprite" data-type="ok"><span>ZEZWOLONO</span></div>
+    <div class="stamp no sprite" data-type="no"><span>ODMOWA</span></div>
   </div>
 </div>
 
@@ -60,21 +51,21 @@
   <h2>Grenzübergang Zgorzelec</h2>
   <p>14. Dezember 1981. Seit gestern gilt das Kriegsrecht. Du sitzt in der Kontrollhütte an der Grenze zur DDR.
   Prüfe Papiere, Autos und Gepäck. Um 22 Uhr beginnt die Sperrstunde.</p>
-  <p style="opacity:.8">Tippe die Person an, um mit ihr zu reden, und das Auto, um hinauszugehen.
-  Mit dem Rotstift kreist du Widersprüche ein, die Handschellen ziehst du auf die Person.
-  Deine Unterlagen liegen in der Teczka. Stempel auf die letzte Passseite, dann ab in die Durchreiche.</p>
+  <p class="soft">Tippe die Person an, um mit ihr zu reden, und das Auto, um hinauszugehen. Das Kennzeichen liest du draußen ab,
+  das Modell bestimmst du mit den Fahrzeugtypen aus der Teczka. Mit dem Rotstift kreist du Widersprüche ein,
+  die Handschellen ziehst du auf die Person.</p>
   <button class="big" id="bStart">Schicht beginnen</button>
 </div>
 
 <div class="overlay outside" id="outside">
+  <canvas id="outBg" class="px"></canvas>
   <div id="outHead"><button class="door" id="bDoor">‹ Zurück in die Hütte</button><h2 id="outTitle"></h2></div>
   <div id="stage">
     <div id="carStage"></div>
     <div id="table">
-      <div id="suitcase">
+      <div id="suitcase" class="sprite">
         <button class="latch l0" data-latch="0" aria-label="Schloss links"></button>
         <button class="latch l1" data-latch="1" aria-label="Schloss rechts"></button>
-        <span>Koffer</span>
       </div>
     </div>
   </div>
@@ -96,6 +87,7 @@
 </div>
 
 <script src="data.js"></script>
+<script src="pixel.js"></script>
 <script src="documents.js"></script>
 <script src="hut.js"></script>
 <script src="car.js"></script>

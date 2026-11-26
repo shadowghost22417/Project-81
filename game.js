@@ -2,11 +2,11 @@
 const S={day:1,date:new Date(1981,11,14),min:DAY_START,correct:0,errors:0,money:0,cur:null,
   found:null,evidence:null,proven:[],mark:null,passSpread:0,sel:[],checkMode:false,z:10,busy:false,flipping:false,
   outArea:null,bagView:false,latches:[false,false],close:null,spotState:{},spotNote:{},pendingSeize:null,
-  asked:{},wantedList:[]};
+  asked:{},notedPlate:false,carURL:null,wantedList:[]};
 
 function toast(msg,kind){
   const t=$("toast"); t.textContent=msg; t.className=kind; t.style.display="block";
-  clearTimeout(toast.h); toast.h=setTimeout(()=>t.style.display="none",kind==="info"?1500:2400);
+  clearTimeout(toast.h); toast.h=setTimeout(()=>t.style.display="none",kind==="info"?1600:2400);
 }
 function updateHUD(){updateWall();updateLog()}
 
@@ -19,17 +19,13 @@ function nextTraveler(){
   toggleCheck(false); toggleAsk(false); toggleFolderMenu(false);
   Object.assign(S,{cur:makeTraveler(S.date,S.wantedList),found:null,evidence:null,proven:[],mark:null,passSpread:0,
     outArea:null,bagView:false,latches:[false,false],close:null,spotState:{},spotNote:{},pendingSeize:null,
-    asked:{},busy:false,flipping:false});
-  const c=S.cur.car;
-  $("traveler").innerHTML=faceSVG(S.cur.face);
-  $("carSvg").innerHTML=carSVG(c.model,c.color,c.low);
-  $("carPlate").textContent=c.plate;
-  $("carBadge").textContent=CAR_MODELS[c.model].short;
+    asked:{},notedPlate:false,carURL:null,busy:false,flipping:false});
+  drawWindowScene(S.cur);
   $("speech").textContent="„"+S.cur.line+"“";
   $("queue").textContent="Wartende Autos: "+rint(2,9);
   renderTravelerDocs(); updateHUD();
   setHint(S.day===1&&S.correct+S.errors===0
-    ?"Person antippen: reden. Auto antippen: rausgehen. Rotstift: prüfen. Handschellen auf die Person ziehen: festnehmen."
+    ?"Person antippen: reden. Auto antippen: rausgehen. Rotstift: prüfen. Die Fahrzeugtypen liegen in der Teczka."
     :"");
 }
 
@@ -75,5 +71,14 @@ $("bNextDay").onclick=()=>{
   document.querySelectorAll(".doc").forEach(e=>e.remove());
   startShift(); nextTraveler();
 };
-window.addEventListener("resize",()=>{homeStamps();homeLens()});
+let resizeTimer=null;
+window.addEventListener("resize",()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{
+    drawWindowScene(S.cur); drawWall(); drawDeskLight(); homeStamps(); homeLens();
+    if($("outside").classList.contains("show")) drawOutBg();
+  },150);
+});
+
+initPixel();
 updateWall();
