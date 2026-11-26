@@ -162,3 +162,8 @@ body.checking #traveler svg{filter:drop-shadow(0 0 8px var(--mark))}
 .tool{min-height:48px;padding:0 16px;border:2px solid var(--panel-text);background:transparent;color:var(--panel-text);border-radius:4px}
 .tool.on{background:var(--mark);color:#1d1a10;border-color:var(--mark)}
 #searchMsg{min-height:24px;font-size:16px;max-width:640px}
+/* Umblättern: Zustand während des Öffnens */
+.doc.pass.opening{background:transparent;box-shadow:none}
+.doc.pass.opening .grip{visibility:hidden}
+.doc.pass.opening .pg.ghost{visibility:hidden}
+.doc.pass.opening .pg.right{box-shadow:0 4px 10px var(--shadow)}

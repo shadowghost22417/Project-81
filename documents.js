@@ -30,7 +30,7 @@ function carSVG(mi,color){
 function makeDraggable(el,onDrop,handle){
   el.addEventListener("pointerdown",e=>{
     el._moved=false;
-    if(S.checkMode||S.busy||e.target.closest(".nodrag")) return;
+    if(S.checkMode||S.busy||S.flipping||e.target.closest(".nodrag")) return;
     if(handle&&!e.target.closest(handle)) return;
     e.preventDefault();
     el.setPointerCapture(e.pointerId);
@@ -142,12 +142,11 @@ function clampDoc(el,left){
   el.style.left=Math.max(0,Math.min(x,d.clientWidth-el.offsetWidth))+"px";
   el.style.top=Math.max(0,Math.min(el.offsetTop,d.clientHeight-el.offsetHeight))+"px";
 }
-function cleanClone(node,cls){
+// Kopie einer Seite ohne IDs und Prüffelder (nur zum Anzeigen)
+function staticClone(node){
   const c=node.cloneNode(true);
-  c.removeAttribute("id");
+  c.removeAttribute("id"); c.style.visibility=""; c.style.display="";
   c.querySelectorAll("[id],[data-k]").forEach(e=>{e.removeAttribute("id");e.removeAttribute("data-k")});
-  c.style.visibility="";
-  c.classList.add("face",cls);
   return c;
 }
 function flipPass(dir){
@@ -156,32 +155,40 @@ function flipPass(dir){
   if(n===p) return;
   const el=$("passport"), x=el.offsetLeft;
 
-  // Schließen: ohne Animation, Umschlag bleibt dort, wo die rechte Seite war
+  // Schließen: ohne Animation, der Umschlag liegt dort, wo die rechte Seite war
   if(n===0){S.passSpread=0;renderPass();clampDoc(el,x+PAGE_W);return}
 
-  // Vorderseite des umklappenden Blatts merken (alte rechte Seite bzw. Umschlag oder alte linke Seite)
-  const oldPage=el.querySelector(dir>0?".pg.right,.pg.cover":".pg.left");
-  const front=cleanClone(oldPage,"front");
+  // Alte Seiten merken, bevor neu gezeichnet wird
+  const oldLeft=el.querySelector(".pg.left"), oldRight=el.querySelector(".pg.right,.pg.cover");
+  const front=staticClone(dir>0?oldRight:oldLeft);                  // Vorderseite des Blatts
+  const keep=dir>0?(oldLeft?staticClone(oldLeft):null):staticClone(oldRight); // bleibt liegen, bis das Blatt landet
 
   S.passSpread=n; renderPass();
-  // Beim Öffnen wächst der Pass nach links, damit die rechte Seite dort liegt, wo der Umschlag war
-  if(p===0) clampDoc(el,x-PAGE_W);
+  if(p===0) clampDoc(el,x-PAGE_W); // beim Öffnen wächst der Pass nach links
   if(n===2) setHint("Stempelseite offen. Ziehe einen Stempel auf die rechte Seite.");
-
   if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  // Rückseite des Blatts = die Seite, auf der es landet
+  // Die Seite, auf der das Blatt landet, ist seine Rückseite
   const target=el.querySelector(dir>0?".pg.left":".pg.right");
-  const rear=cleanClone(target,"rear");
-  target.style.visibility="hidden";
+  const rear=staticClone(target);
 
+  // Bis zur Landung liegt dort noch die alte Seite (beim Öffnen: nichts)
+  let under=keep;
+  if(!under){under=document.createElement("div");under.className="pg left ghost";el.classList.add("opening")}
+  target.style.display="none";
+  target.parentNode.insertBefore(under,target);
+
+  front.classList.add("face","front"); rear.classList.add("face","rear");
   const leaf=document.createElement("div");
   leaf.className="leaf "+(dir>0?"fwd":"bwd");
   leaf.appendChild(front); leaf.appendChild(rear);
   el.querySelector(".spread").appendChild(leaf);
 
   S.flipping=true;
-  setTimeout(()=>{leaf.remove();target.style.visibility="";S.flipping=false},470);
+  setTimeout(()=>{
+    leaf.remove(); under.remove(); target.style.display="";
+    el.classList.remove("opening"); S.flipping=false;
+  },470);
 }
 function onPassDrop(el){
   if(!overlaps(el,$("slot"))) return;
@@ -202,7 +209,7 @@ function homeStamps(){
 }
 function onStampDrop(st){
   const area=$("stampArea"), r=st.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.bottom-4;
-  if(!area) toast("Blättere im Pass bis zur Stempelseite.","info");
+  if(!area||S.flipping) toast("Blättere im Pass bis zur Stempelseite.","info");
   else{
     const a=area.getBoundingClientRect();
     if(cx>a.left&&cx<a.right&&cy>a.top&&cy<a.bottom){
