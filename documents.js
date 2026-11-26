@@ -1,5 +1,7 @@
 // Dokumente, Pass, Stempel und Prüfmodus
 
+const PAGE_W=190;
+
 function faceSVG(f,photo){
   return `<svg viewBox="0 0 100 120" preserveAspectRatio="xMidYMax meet">
     <path d="M8 120 Q14 86 50 84 Q86 86 92 120Z" fill="${f.coat}"/>
@@ -105,7 +107,7 @@ function renderTravelerDocs(){
     <span class="f" data-k="auth.name">${t.name}</span><br>do używania pojazdu ${c.regPlate}.
     <div class="sign">${c.owner.split(" ")[1]}</div>`,0.6,150);
 
-  const pass=placeDoc("pass","",0.28,150,onPassDrop,".grip");
+  const pass=placeDoc("pass","",0.3,150,onPassDrop,".grip");
   pass.id="passport"; renderPass();
   // Wischen zum Blättern
   pass.addEventListener("pointerdown",e=>{
@@ -121,7 +123,7 @@ function renderPass(){
   const el=$("passport"), t=S.cur, p=S.passSpread;
   el.classList.toggle("closed",p===0);
   let inner;
-  if(p===0) inner=`<div class="pg cover"><div class="crest"></div>POLSKA<br>RZECZPOSPOLITA<br>LUDOWA<b>PASZPORT</b><div class="swipe">‹ wischen zum Öffnen ›</div></div>`;
+  if(p===0) inner=`<div class="pg cover"><div class="crest"></div>POLSKA<br>RZECZPOSPOLITA<br>LUDOWA<b>PASZPORT</b><div class="swipe">‹ wischen zum Öffnen</div></div>`;
   else if(p===1) inner=`<div class="pg left"><div class="row">${photoHTML(t.photoFace,"pass.photo")}<div>
       <small>Nazwisko i imię</small><br><span class="f" data-k="pass.name">${t.passName}</span><br>
       <small>Nr dowodu osobistego</small><br><span class="f" data-k="pass.nr">${t.passId}</span></div></div>
@@ -132,23 +134,54 @@ function renderPass(){
   else inner=`<div class="pg left"><small>Wpisy urzędowe</small><p class="official">Paszport ważny do wyjazdu do NRD.</p></div>
     <div class="pg right"><small>Stemple kontrolne</small><div class="stampArea" id="stampArea">${S.mark?imprintHTML(S.mark):""}</div></div>`;
   el.innerHTML=`<div class="grip"><span>Paszport</span><span>${p?p+"/2":""}</span></div><div class="spread">${inner}</div>`;
-  const d=$("desk");
-  el.style.left=Math.max(0,Math.min(el.offsetLeft,d.clientWidth-el.offsetWidth))+"px";
-  el.style.top=Math.max(0,Math.min(el.offsetTop,d.clientHeight-el.offsetHeight))+"px";
+  clampDoc(el);
   markSelected();
 }
+function clampDoc(el,left){
+  const d=$("desk"), x=left===undefined?el.offsetLeft:left;
+  el.style.left=Math.max(0,Math.min(x,d.clientWidth-el.offsetWidth))+"px";
+  el.style.top=Math.max(0,Math.min(el.offsetTop,d.clientHeight-el.offsetHeight))+"px";
+}
+function cleanClone(node,cls){
+  const c=node.cloneNode(true);
+  c.removeAttribute("id");
+  c.querySelectorAll("[id],[data-k]").forEach(e=>{e.removeAttribute("id");e.removeAttribute("data-k")});
+  c.style.visibility="";
+  c.classList.add("face",cls);
+  return c;
+}
 function flipPass(dir){
-  const n=Math.max(0,Math.min(2,S.passSpread+dir)); if(n===S.passSpread) return;
-  const el=$("passport"), old=el.querySelector(dir>0?".pg.right,.pg.cover":".pg.left");
-  const leaf=old&&n>0?old.cloneNode(true):null;
+  if(S.flipping) return;
+  const p=S.passSpread, n=Math.max(0,Math.min(2,p+dir));
+  if(n===p) return;
+  const el=$("passport"), x=el.offsetLeft;
+
+  // Schließen: ohne Animation, Umschlag bleibt dort, wo die rechte Seite war
+  if(n===0){S.passSpread=0;renderPass();clampDoc(el,x+PAGE_W);return}
+
+  // Vorderseite des umklappenden Blatts merken (alte rechte Seite bzw. Umschlag oder alte linke Seite)
+  const oldPage=el.querySelector(dir>0?".pg.right,.pg.cover":".pg.left");
+  const front=cleanClone(oldPage,"front");
+
   S.passSpread=n; renderPass();
+  // Beim Öffnen wächst der Pass nach links, damit die rechte Seite dort liegt, wo der Umschlag war
+  if(p===0) clampDoc(el,x-PAGE_W);
   if(n===2) setHint("Stempelseite offen. Ziehe einen Stempel auf die rechte Seite.");
-  if(leaf){
-    leaf.querySelectorAll("[id],[data-k]").forEach(x=>{x.removeAttribute("id");x.removeAttribute("data-k")});
-    leaf.classList.add("leaf",dir>0?"fwd":"back");
-    el.querySelector(".spread").appendChild(leaf);
-    setTimeout(()=>leaf.remove(),320);
-  }
+
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  // Rückseite des Blatts = die Seite, auf der es landet
+  const target=el.querySelector(dir>0?".pg.left":".pg.right");
+  const rear=cleanClone(target,"rear");
+  target.style.visibility="hidden";
+
+  const leaf=document.createElement("div");
+  leaf.className="leaf "+(dir>0?"fwd":"bwd");
+  leaf.appendChild(front); leaf.appendChild(rear);
+  el.querySelector(".spread").appendChild(leaf);
+
+  S.flipping=true;
+  setTimeout(()=>{leaf.remove();target.style.visibility="";S.flipping=false},470);
 }
 function onPassDrop(el){
   if(!overlaps(el,$("slot"))) return;
