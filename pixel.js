@@ -180,13 +180,18 @@ function carPhoto(mi){
 
 // ---------- Menschen ----------
 function hashF(f){const s=JSON.stringify(f);let h=7;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)}
-// Müde, eingefallene Gesichter mit harter Licht-von-oben-Schattierung.
+// Müde, ernste Gesichter mit harter Licht-von-oben-Schattierung.
+// Ausdruck je Person: neutral, leicht traurig oder leicht verärgert.
 // Im Fenster liegen die Augen oft im Schatten (Mütze oder Deckenlicht), auf dem Passfoto (Blitz) nie.
+const USH_FUR=["#6a5e4e","#5c5850","#4a4038","#7a7266"];
 function portrait(f,photo){
-  const c=mk(58,68),p=P(c),h=hashF(f),cx=29;
-  const sk=gramp(shade(mix(f.skin,"#8b9472",.42),-.06)), hr=gramp(mute(f.hair,.35)), co=gramp(shade(mute(f.coat,.5),-.12));
-  const hood=f.hat&&!photo, old=h%5<2, gaunt=h%3!==1, bald=!f.female&&h%4===0;
-  const shadowEyes=!photo&&(hood||h%7<3);
+  const c=mk(58,68),p=P(c),h=hashF(f),cx=29,fem=f.female;
+  const sk=gramp(shade(mix(f.skin,"#8b9472",fem?.34:.42),fem?-.02:-.06)), hr=gramp(mute(f.hair,.35)), co=gramp(shade(mute(f.coat,.5),-.12));
+  const hood=f.hat&&!photo, old=!fem&&h%5<2, gaunt=!fem&&h%3!==1, bald=!fem&&h%4===0;
+  const hat=hood?(fem?(h%3===0?"ushanka":"scarf"):(h%3!==0?"ushanka":"cap")):null;
+  const expr=["neutral","sad","neutral","angry","neutral","sad","angry"][(h>>4)%7];
+  const hairStyle=(h>>2)%3; // Frauen: 0 lang, 1 Dauerwelle, 2 Bob
+  const shadowEyes=!photo&&(hood||h%7===0);
   const dark=shade(sk[4],-.4), mouth=shade(sk[4],-.25);
   // Mantel mit hängenden Schultern und hochgeschlagenem Kragen
   p.ell(cx,77,29,28,(x,y,u)=>band(co,.2+(u+1)*.34,x,y),(x,y)=>y<68);
@@ -196,65 +201,98 @@ function portrait(f,photo){
   if(h%3===0){const sc=gramp(mute(SCARVES[(h>>3)%SCARVES.length],.3));
     p.ell(cx,46,11,3,(x,y,u)=>band(sc,.15+(u+1)*.38,x,y));p.rect(cx+3,47,4,11,sc[3]);p.dith(cx+3,47,4,11,sc[2])}
   // Hals im Schatten des Kinns
-  p.rect(cx-5,35,10,12,sk[3]);p.rect(cx-5,35,2,12,sk[2]);p.rect(cx-5,36,10,3,sk[4]);
-  if(f.female&&!hood) p.ell(cx,31,14,19,(x,y,u)=>band(hr,.15+(u+1)*.38,x,y),(x,y)=>y>12);
-  // Kopf: schmal, zum Kinn hin eingefallen
-  const hy=26,rx=11,ry=15,inHead=new Set();
-  for(let y=hy-ry;y<=hy+ry;y++){const v=(y-hy)/ry;let w=rx*Math.sqrt(Math.max(0,1-v*v));if(v>.25)w*=1-(v-.25)*.42;
+  const nw=fem?8:10;
+  p.rect(cx-nw/2,35,nw,12,sk[3]);p.rect(cx-nw/2,35,2,12,sk[2]);p.rect(cx-nw/2,36,nw,3,sk[4]);
+  // Frauenhaar hinter dem Kopf
+  const hairT=(x,y,u)=>band(hr,.15+(u+1)*.36,x,y), curl=(x,y,u)=>((x*3+y*2)%5<2)?hr[1]:((x+y*3)%4===0?hr[4]:band(hr,.2+(u+1)*.34,x,y));
+  if(fem&&!hood){
+    if(hairStyle===0) p.ell(cx,31,14,19,hairT,(x,y)=>y>12&&(y<34||Math.abs(x-cx)>7)&&y<47);
+    else if(hairStyle===1) p.ell(cx,25,17,16,curl,(x,y)=>y>8&&y<41);
+    else p.ell(cx,25,14,13,hairT,(x,y)=>y>11&&y<=31);
+  }
+  // Kopf: schmal, zum Kinn hin verjüngt
+  const hy=26,rx=fem?10:11,ry=15,inHead=new Set(),taper=fem?.55:.42;
+  for(let y=hy-ry;y<=hy+ry;y++){const v=(y-hy)/ry;let w=rx*Math.sqrt(Math.max(0,1-v*v));if(v>.25)w*=1-(v-.25)*taper;
     for(let x=Math.round(cx-w);x<=Math.round(cx+w);x++){const u=(x-cx)/rx;
       let t=.2+(u+1)*.34+Math.max(0,v)*.14;
       if(gaunt&&v>.12&&v<.5&&Math.abs(u)>.45&&Math.abs(u)<.85) t+=.2;
       inHead.add(y*58+x); p.dot(x,y,band(sk,t,x,y))}}
   const keepHead=(x,y)=>inHead.has(y*58+x);
-  p.rect(cx-12,23,2,7,sk[2]);p.dot(cx-12,26,sk[4]);p.rect(cx+11,23,2,7,sk[4]);p.dot(cx+12,26,dark);
+  p.rect(cx-rx-1,23,2,7,sk[2]);p.dot(cx-rx-1,26,sk[4]);p.rect(cx+rx,23,2,7,sk[4]);p.dot(cx+rx+1,26,dark);
   // Licht auf Stirn und Schädel
   p.ell(cx-3,15,4,2,(x,y)=>((x+y)&1)?null:sk[0],keepHead);p.rect(cx-4,15,3,1,sk[0]);
   if(old){[17,19].forEach(y=>{for(let x=cx-5;x<=cx+3;x++)if((x+y)%3)p.dot(x,y,sk[3])})}
-  // Haare
-  if(f.female){p.ell(cx,15,12,6,(x,y,u)=>band(hr,.15+(u+1)*.36,x,y),(x,y)=>y<=16);
-    p.rect(cx-12,16,3,19,hr[2]);p.rect(cx+10,16,3,19,hr[4]);p.dith(cx-9,16,18,2,hr[2])}
+  // Haare vorne
+  if(fem){
+    if(hairStyle===1){p.ell(cx,14,13,7,curl,(x,y)=>y<=16);p.rect(cx-13,15,3,16,hr[2]);p.dith(cx-13,15,3,16,hr[1]);p.rect(cx+10,15,3,16,hr[4])}
+    else{p.ell(cx,15,12,6,hairT,(x,y)=>y<=16);p.rect(cx-12,16,3,hairStyle===2?15:19,hr[2]);p.rect(cx+10,16,3,hairStyle===2?15:19,hr[4]);
+      p.dith(cx-9,16,18,2,hr[2]);
+      if(hairStyle===2){p.line(cx+3,10,cx+2,16,hr[4]);p.poly([[cx+3,11],[cx-11,15],[cx-11,19],[cx-4,17]],hr[1]);
+        p.line(cx-13,22,cx-13,30,hr[3]);p.line(cx+12,22,cx+12,30,hr[4]);p.dot(cx-12,31,hr[2]);p.dot(cx+11,31,hr[4])}
+      else{p.line(cx-11,20,cx-11,34,hr[3]);p.line(cx+11,20,cx+11,34,hr[4])}}
+  }
   else if(bald){p.rect(cx-12,17,2,7,hr[3]);p.rect(cx+10,17,2,7,hr[4]);p.dith(cx-8,12,10,2,hr[3])}
-  else{p.ell(cx,14,12,5,(x,y,u)=>band(hr,.15+(u+1)*.36,x,y),(x,y)=>y<=15);p.rect(cx-12,14,2,9,hr[2]);p.rect(cx+10,14,2,9,hr[4])}
-  // Augenhöhlen, schwere Lider, Tränensäcke, traurig hochgezogene innere Brauen
+  else{p.ell(cx,14,12,5,hairT,(x,y)=>y<=15);p.rect(cx-12,14,2,9,hr[2]);p.rect(cx+10,14,2,9,hr[4])}
+  // Augen, Lider, Brauen (nur leicht geneigt)
   [[cx-6,1],[cx+5,-1]].forEach(([ex,s])=>{
-    p.rect(ex-3,22,6,4,s>0?sk[3]:sk[4]);
+    p.rect(ex-3,22,6,4,s>0?(fem?sk[2]:sk[3]):sk[4]);
     p.rect(ex-2,24,4,1,"#8f8c7a");p.dot(ex,24,"#0d0c0a");p.dot(ex+(s>0?1:-1),24,"#0d0c0a");
-    p.rect(ex-2,23,5,1,dark);
-    p.rect(ex-2,26,5,1,sk[3]);p.rect(ex-1,27,3,1,s>0?sk[2]:sk[3]);
-    for(let i=0;i<6;i++){const x=s>0?ex-3+i:ex+3-i,y=22-Math.floor(i/2.5);p.dot(x,y,hr[4]);if(i>1)p.dot(x,y+1,hr[4])}
+    p.rect(ex-2,23,5,1,expr==="angry"?dark:sk[4]);
+    if(fem) p.dot(s>0?ex-3:ex+3,23,dark);
+    else{p.rect(ex-2,26,5,1,sk[3]);p.rect(ex-1,27,3,1,s>0?sk[2]:sk[3])}
+    const brow=fem?shade(hr[3],-.1):hr[4];
+    for(let i=0;i<5;i++){const x=s>0?ex-2+i:ex+2-i;
+      const y=expr==="sad"&&i>=3?20:expr==="angry"&&i>=3?22:21;
+      p.dot(x,y,brow);if(!fem&&i>0&&i<4)p.dot(x,y-1,brow)}
   });
-  p.dot(cx-1,21,sk[3]);p.dot(cx-1,22,sk[3]);
-  if(shadowEyes){
-    for(let y=19;y<=27;y++)for(let x=cx-12;x<=cx+12;x++){if(!keepHead(x,y)&&!(x<cx-11||x>cx+10))continue;
-      if(y===19||y===27){if((x+y)&1)p.dot(x,y,dark)}else p.dot(x,y,dark)}
-    p.dot(cx-6,24,sk[4]);p.dot(cx+5,24,sk[4]);
+  if(expr==="angry"){p.dot(cx-1,21,sk[4]);p.dot(cx-1,22,sk[4]);p.dot(cx,22,sk[3])}
+  else if(old) p.dot(cx-1,22,sk[3]);
+  // Halbtransparenter Schatten: Augen bleiben schwach sichtbar, oben (unter der Krempe) am dunkelsten
+  if(shadowEyes){const top=hood?17:19;
+    for(let y=top;y<=26;y++)for(let x=cx-12;x<=cx+12;x++){if(!keepHead(x,y))continue;
+      const a=y<=top+2?.62:y>=25?((x+y)&1?.4:0):.5;if(a)p.dot(x,y,`rgba(8,9,7,${a})`)}
+    p.dot(cx-6,24,"rgba(150,148,128,.5)");p.dot(cx+5,24,"rgba(150,148,128,.35)");
   }
   // Nase mit Licht auf dem Rücken
   const ny=shadowEyes?26:23;
   p.line(cx-1,ny,cx-1,29,sk[1]);p.line(cx+1,ny+1,cx+1,30,sk[4]);p.dot(cx-1,29,sk[0]);
   p.rect(cx-2,30,4,1,sk[2]);p.rect(cx-1,31,3,1,sk[3]);p.dot(cx-2,31,dark);p.dot(cx+2,31,dark);
-  // Falten und nach unten gezogener Mund
-  p.line(cx-4,31,cx-6,35,sk[3]);p.line(cx+4,31,cx+6,35,sk[4]);
-  p.rect(cx-2,33,5,1,sk[3]);p.rect(cx-3,34,7,1,mouth);p.dot(cx-4,35,mouth);p.dot(cx+4,35,mouth);
-  p.rect(cx-2,35,4,1,sk[1]);p.dot(cx-1,38,sk[1]);
+  // Wangenfalten und Mund
+  if(fem){p.dot(cx-5,33,sk[3]);p.dot(cx+5,33,sk[4])}
+  else{p.line(cx-4,31,cx-6,35,sk[3]);p.line(cx+4,31,cx+6,35,sk[4])}
+  const lip=fem?mix(sk[3],"#6e3432",.5):sk[3], lipLo=fem?mix(sk[2],"#7a4a44",.4):sk[1];
+  if(expr==="sad"){p.rect(cx-2,33,5,1,lip);p.rect(cx-2,34,5,1,mouth);p.dot(cx-3,35,mouth);p.dot(cx+3,35,mouth);p.rect(cx-1,35,3,1,lipLo)}
+  else if(expr==="angry"){p.rect(cx-3,33,7,1,fem?lip:sk[4]);p.rect(cx-3,34,7,1,mouth);p.rect(cx-1,35,3,1,fem?lipLo:sk[3])}
+  else{p.rect(cx-2,33,5,1,lip);p.rect(cx-3,34,7,1,mouth);p.rect(cx-2,35,5,1,lipLo)}
+  p.dot(cx-1,38,sk[1]);
   if(f.beard) p.ell(cx,35,11,7,(x,y)=>((x*3+y)&1)?hr[3]:hr[4],(x,y)=>keepHead(x,y)&&y>=31&&!(y===34&&Math.abs(x-cx)<4));
-  else if(!f.female&&h%3===0) p.ell(cx,36,10,6,(x,y)=>((x*3+y*5)%4===0)?shade(hr[3],-.1):null,(x,y)=>keepHead(x,y)&&y>=32&&!(y>=33&&y<=35&&Math.abs(x-cx)<5));
+  else if(!fem&&h%3===0) p.ell(cx,36,10,6,(x,y)=>((x*3+y*5)%4===0)?shade(hr[3],-.1):null,(x,y)=>keepHead(x,y)&&y>=32&&!(y>=33&&y<=35&&Math.abs(x-cx)<5));
   if(f.glasses){const gc="#0f0e0c";
     [[cx-9,cx-3],[cx+2,cx+8]].forEach(([a,b])=>{p.rect(a,22,b-a+1,1,gc);p.rect(a,26,b-a+1,1,gc);p.rect(a,22,1,5,gc);p.rect(b,22,1,5,gc);p.dot(a+1,23,"#7f877c")});
     p.rect(cx-3,23,5,1,gc)}
-  if(hood){
-    if(f.female){const sc=gramp(mute(SCARVES[h%SCARVES.length],.3));
-      p.ell(cx,24,15,17,(x,y,u)=>band(sc,.15+(u+1)*.36,x,y),(x,y)=>y<=19||(Math.abs(x-cx)>=11&&y<=37));
-      p.rect(cx-3,38,7,3,sc[2]);p.dot(cx-4,40,sc[3]);p.dot(cx+4,40,sc[3]);
-      for(let x=cx-12;x<=cx+12;x+=3)p.dot(x,11+Math.round(Math.abs(x-cx)*.15),sc[1]);
-    } else if(h%2){const hm=gramp(HATS[h%HATS.length]);
-      p.ell(cx,14,14,8,(x,y)=>((x+y*2)%3===0)?hm[1]:((x*5+y)%7===0?hm[3]:hm[2]),(x,y)=>y<=19);
-      p.rect(cx-14,17,4,12,hm[2]);p.dith(cx-14,17,4,12,hm[1]);p.rect(cx+10,17,4,12,hm[3]);
-      p.rect(cx-13,17,26,3,hm[1]);p.dith(cx-13,17,26,3,hm[0]);
-    } else {const hm=gramp(HATS[h%HATS.length]);
-      p.ell(cx,15,13,6,(x,y,u)=>band(hm,.15+(u+1)*.36,x,y),(x,y)=>y<=18);
-      p.rect(cx-14,18,24,2,hm[3]);p.rect(cx-14,18,24,1,hm[2]);
-    }
+  // Kopfbedeckungen
+  if(hat==="scarf"){const sc=gramp(mute(SCARVES[h%SCARVES.length],.3));
+    p.ell(cx,24,15,17,(x,y,u)=>band(sc,.15+(u+1)*.36,x,y),(x,y)=>y<=19||(Math.abs(x-cx)>=11&&y<=37));
+    p.rect(cx-3,38,7,3,sc[2]);p.dot(cx-4,40,sc[3]);p.dot(cx+4,40,sc[3]);
+    for(let x=cx-12;x<=cx+12;x+=3)p.dot(x,11+Math.round(Math.abs(x-cx)*.15),sc[1]);
+  } else if(hat==="cap"){const hm=gramp(HATS[h%HATS.length]);
+    p.ell(cx,15,13,6,(x,y,u)=>band(hm,.15+(u+1)*.36,x,y),(x,y)=>y<=18);
+    p.rect(cx-14,18,24,2,hm[3]);p.rect(cx-14,18,24,1,hm[2]);
+  } else if(hat==="ushanka"){
+    // Uschanka: Stoffkrone, dicker Fellrand, Ohrenklappen (manchmal hochgebunden)
+    const hm=gramp(fem?mute(["#4a3a2c","#3a3530","#55493c"][h%3],.3):HATS[h%HATS.length]);
+    const fur=gramp(USH_FUR[(h>>2)%USH_FUR.length]), flapsUp=(h>>5)%3===0;
+    const FR=rng(h);const furPx=(x,y,base)=>{const n=FR();return n<.12?fur[0]:n<.3?fur[1]:n>.86?fur[4]:n>.72?fur[3]:band(fur,base,x,y)};
+    if(fem&&!flapsUp){p.rect(cx-11,26,2,10,hr[2]);p.rect(cx+9,26,2,10,hr[4])}
+    p.ell(cx,12,12,7,(x,y,u)=>band(hm,.2+(u+1)*.34,x,y),(x,y)=>y<=14);
+    p.line(cx-1,6,cx-1,13,hm[3]);p.line(cx+5,7,cx+6,13,hm[3]);
+    const flapBot=flapsUp?23:33;
+    for(let y=15;y<=flapBot;y++)for(const [x0,x1,sh] of [[cx-15,cx-11,.25],[cx+10,cx+14,.7]]){
+      for(let x=x0;x<=x1;x++){if(y>=flapBot-1&&(x===x0||x===x1))continue;p.dot(x,y,furPx(x,y,sh))}}
+    if(!flapsUp){p.line(cx-13,flapBot+1,cx-12,flapBot+5,"#1c1a17");p.line(cx+12,flapBot+1,cx+13,flapBot+5,"#1c1a17")}
+    for(let y=13;y<=19;y++)for(let x=cx-14;x<=cx+14;x++){if((y===19&&FR()<.5)||(y===13&&FR()<.4))continue;
+      p.dot(x,y,furPx(x,y,.15+((x-cx)/14+1)*.34+(y-13)*.03))}
+    if(flapsUp){p.rect(cx-6,10,12,1,"#1c1a17");p.dot(cx,11,"#1c1a17")}
   }
   return outline(c);
 }
