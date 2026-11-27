@@ -14,24 +14,23 @@ function tearCalendar(){
   s.querySelectorAll("[id]").forEach(e=>e.removeAttribute("id"));
   s.classList.add("sheet");
   s.style.left=c.offsetLeft+"px"; s.style.top=c.offsetTop+"px"; s.style.width=c.offsetWidth+"px";
-  $("wall").appendChild(s); setTimeout(()=>s.remove(),800);
+  $("wall").appendChild(s); setTimeout(()=>s.remove(),800); SFX.play("tear");
 }
 function setHint(m){$("note").textContent=m||""}
 
 // ---------- Eigene Unterlagen in der Teczka ----------
 function renderRules(){
-  return placeDoc("rules keep",`<h3>${T("Instrukcja – dzień "+S.day,"Dienstanweisung")}</h3><ol>
-    <li>Ausreise nur mit Dowód, Paszport und Przepustka.</li>
-    <li>Der Paszport muss gültig sein.</li>
-    <li>Alle Namen exakt gleich, auch ą, ł, ś usw.</li>
-    <li>Die Ausweisnummer im Paszport muss stimmen.</li>
-    <li>Die Przepustka muss heute gültig sein.</li>
-    <li>Das Foto muss die Person zeigen.</li>
-    <li>Kennzeichen (draußen ablesen) und Modell (siehe Fahrzeugtypen) wie im Dowód rejestracyjny.</li>
-    <li>Fremdes Auto nur mit Upoważnienie.</li>
-    <li>Gepäck muss vollständig deklariert sein.</li>
-    <li>Aussagen müssen zu den Papieren passen.</li>
-    <li>Fälschung, Schmuggel oder List gończy: Festnahme.</li></ol>`,0.01,50,onOwnDrop);
+  const d=today(), prev=S.day>1?activeRules(DAYS[S.day-2]):S.rules;
+  return placeDoc("rules keep",`<h3>${T("Instrukcja – dzień "+S.day,"Dienstanweisung")}</h3><ol>${S.rules.map(id=>{
+    const r=RULES[id], txt=ruleText(id,d), fresh=!prev.includes(id);
+    return `<li class="${fresh?"newrule":""}">${r.key?`<span class="f" data-k="${r.key}">${txt}</span>`:txt}</li>`}).join("")}</ol>`,0.01,50,onOwnDrop);
+}
+// Fernschreiben mit den Anweisungen des Tages
+function renderOrders(){
+  const lines=S.orders.length?S.orders.map((o,i)=>`<p>${i+1}. ${o.text.toUpperCase()}</p>`).join(""):"<p>KEINE BESONDEREN ANWEISUNGEN.</p>";
+  SFX.play("type");
+  return placeDoc("orders keep",`<h3>${T("Dalekopis","Fernschreiben")}</h3><div class="tele"><small>${fmt(S.date)} 05:40 · KOMENDA WOP</small>${lines}</div>`,
+    0.15,Math.max(40,$("desk").clientHeight-250),onOwnDrop);
 }
 function renderWanted(){
   return placeDoc("wanted keep",`<h3>${T("List gończy","Fahndungsliste")}</h3>${
@@ -44,12 +43,13 @@ function renderTypes(){
 }
 function logHTML(){
   return `<h3>${T("Dziennik służby","Dienstbuch")}</h3><small>Datum</small><br>${fmt(S.date)}<br>
-    <small>Richtig / Fehler</small><br>${S.correct} / ${S.errors}<br><small>Kontostand</small><br>${S.money} zł`;
+    <small>Richtig / Fehler</small><br>${S.correct} / ${S.errors}<br><small>Kontostand</small><br>${S.money} zł<br>
+    <small>Verwarnungen</small><br>${S.warnings} / 3<br><small>Zu Hause</small><br>${S.family.map(m=>m.name+": "+memberStatus(m)[0]).join("<br>")}`;
 }
 function renderLog(){return placeDoc("log keep",logHTML(),0.02,180,onOwnDrop)}
 function updateLog(){const el=$("own-log");if(el) el.innerHTML=logHTML()}
 
-const OWN_DOCS={rules:["Instrukcja",renderRules],wanted:["List gończy",renderWanted],
+const OWN_DOCS={rules:["Instrukcja",renderRules],orders:["Dalekopis",renderOrders],wanted:["List gończy",renderWanted],
   types:["Typy pojazdów",renderTypes],log:["Dziennik służby",renderLog]};
 function takeOut(k){
   let el=$("own-"+k);

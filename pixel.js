@@ -446,11 +446,14 @@ function setSnowLayer(i,W,H){
   if(reduceMotion()) snowFrame(s,0,false);
   else if(!snowRun){snowRun=true;requestAnimationFrame(snowLoop)}
 }
+// In den warmen Monaten Nieselregen statt Schnee
+const isRain=()=>typeof S!=="undefined"&&S.date&&typeof isColdMonth==="function"&&!isColdMonth(S.date);
 function snowFrame(s,now,move){
-  const g=$(s.id).getContext("2d"); g.clearRect(0,0,s.W,s.H);
+  const g=$(s.id).getContext("2d"), rain=isRain(); g.clearRect(0,0,s.W,s.H);
   for(const f of s.fl){
-    if(move){f.y+=f.v;f.x+=Math.sin(now/900+f.ph)*.15;if(f.y>s.H){f.y=-1;f.x=Math.random()*s.W}}
-    g.fillStyle=f.big?"rgba(170,172,162,.75)":"rgba(140,144,134,.55)";g.fillRect(Math.round(f.x),Math.round(f.y),f.big?2:1,1)}
+    if(move){f.y+=rain?f.v*7:f.v;f.x+=rain?-.4:Math.sin(now/900+f.ph)*.15;if(f.y>s.H){f.y=-3;f.x=Math.random()*s.W}}
+    if(rain){g.fillStyle=f.big?"rgba(120,128,128,.5)":"rgba(100,108,108,.35)";g.fillRect(Math.round(f.x),Math.round(f.y),1,f.big?4:3)}
+    else{g.fillStyle=f.big?"rgba(170,172,162,.75)":"rgba(140,144,134,.55)";g.fillRect(Math.round(f.x),Math.round(f.y),f.big?2:1,1)}}
 }
 function snowLoop(now){
   if(now-snowLast>60){snowLast=now;SNOWS.forEach(s=>{if(s.W)snowFrame(s,now,true)})}

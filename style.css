@@ -170,7 +170,7 @@ body.checking .f,body.checking #calendar{background-color:rgba(208,168,58,.3);cu
 @media (prefers-reduced-motion: reduce){.glow{animation:none;opacity:.8}}
 .hot{position:absolute;touch-action:none;cursor:grab}
 .plateTag{position:absolute;transform:translate(-50%,-50%);background:#0d0d0c;color:#d2cfc2;border:2px solid #7c7f78;
-  font:600 13px "Pixelify Sans",monospace;padding:2px 6px;box-shadow:2px 2px 0 #000;z-index:2}
+  font:20px/1 VT323,monospace;letter-spacing:1px;padding:2px 6px;box-shadow:2px 2px 0 #000;z-index:2}
 .plateTag.noted{outline:3px solid var(--mark)}
 #table{flex:1;min-height:160px;background:#2c2822 var(--woodTex);background-size:144px 72px;border:3px solid #120f0c;
   box-shadow:4px 4px 0 #000;display:flex;align-items:center;justify-content:center;padding:14px}
@@ -224,3 +224,52 @@ body.checking .f,body.checking #calendar{background-color:rgba(208,168,58,.3);cu
 .lever{position:absolute;right:8%;top:8%;width:36px;height:138px;background-size:100% 100%;touch-action:none}
 .pulls{position:absolute;left:10px;bottom:8px;color:#fff;font:20px VT323,monospace;text-shadow:2px 2px 0 #000}
 .overlay p.version{font-size:15px;opacity:.6}
+
+/* ---------- Version 3: Kampagne ---------- */
+.btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+#mute{min-height:34px;padding:0 10px;font:16px VT323,monospace;margin-top:auto;margin-bottom:10px}
+.doc .newrule{color:#7a1f1a;font-weight:bold}
+.doc.orders{width:250px;border-top:9px solid #55584f;background-color:#c9c4ae}
+.tele{font:16px/1.1 VT323,monospace;letter-spacing:.5px}
+.tele p{margin:4px 0}
+.doc.deleg{border-top:9px solid #5a5240}
+.doc.env{width:170px;background:#a89c78;border-top:9px solid #7a6c4c;cursor:grab}
+.envbody{height:34px;margin:4px 0;background:repeating-linear-gradient(135deg,rgba(0,0,0,.08) 0 3px,transparent 3px 6px);
+  display:flex;align-items:center;justify-content:center;font-size:15px}
+.env small{font-size:13px}
+.official{display:block;padding:2px;min-height:120px}
+.exitmark{display:block;margin:10px auto 0;width:max-content;border:3px double #3e4a6e;color:#3e4a6e;padding:2px 6px;
+  font:600 11px/1.15 "Pixelify Sans",monospace;text-align:center;transform:rotate(-4deg);opacity:.85}
+
+/* Zeitung */
+#paper{justify-content:flex-start;padding-top:18px}
+.news{width:min(94vw,760px);background:#b9b29a var(--paperTex);background-size:72px;color:#1b1a16;padding:14px 18px;
+  border:3px solid #0b0b0a;box-shadow:6px 6px 0 #000;text-align:left;font:18px/1.15 VT323,monospace}
+.mast{display:flex;flex-direction:column;align-items:center;border-bottom:4px double #1b1a16;padding-bottom:6px}
+.mast b{font:600 40px/1 "Pixelify Sans",monospace;letter-spacing:3px;color:#6e1f1a}
+.mast small{font-size:15px;opacity:.75}
+.news .head{font:600 24px/1.1 "Pixelify Sans",monospace;margin:10px 0;text-align:left}
+.cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+.cols p{margin:0 0 8px}
+.box{border:2px solid #1b1a16;padding:6px 8px;margin-bottom:10px}
+.box b{display:block;font:600 14px "Pixelify Sans",monospace;margin-bottom:4px}
+.box.whisper{border-style:dashed;font-style:italic}
+.box.private{background:rgba(0,0,0,.08)}
+.dayno{margin:6px 0 0;font-size:15px;opacity:.65;text-align:center}
+@media (max-width:640px){.cols{grid-template-columns:1fr}.mast b{font-size:30px}}
+
+/* Abrechnung */
+#ledger{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:min(94vw,820px);text-align:left;font:19px/1.15 VT323,monospace}
+#ledger h3{font:600 16px "Pixelify Sans",monospace;margin:6px 0;border-bottom:2px solid var(--btn-hi)}
+.lrow{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+.lrow small{opacity:.6}
+.lrow.sum{border-top:2px solid var(--btn-hi);margin-top:4px;padding-top:4px}
+.lnote{margin:6px 0;color:#c9a46a}
+.buy{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer}
+.buy span{flex:1}
+.buy.no{opacity:.45}
+.buy input{width:20px;height:20px;accent-color:#8a2a25}
+.bad{color:#d0544f}
+.st.ok{color:#8aa07a}.st.warn{color:#c9a46a}.st.sick{color:#d08a4f}.st.crit{color:#e0524a}
+@media (max-width:640px){#ledger{grid-template-columns:1fr}}
+#gameOver p{max-width:640px}

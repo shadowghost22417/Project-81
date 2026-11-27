@@ -12,6 +12,7 @@ function makeDraggable(el,onDrop,handle,onMove){
     if(handle&&!e.target.closest(handle)) return;
     e.preventDefault();
     el.setPointerCapture(e.pointerId);
+    if(el.classList.contains("doc")) SFX.play("paper");
     el.style.zIndex=el.classList.contains("stamp")?100001:el.id==="lens"?99999:++S.z;
     const d=$("desk").getBoundingClientRect(), r=el.getBoundingClientRect();
     const ox=e.clientX-r.left, oy=e.clientY-r.top;
@@ -47,38 +48,55 @@ function clampDoc(el,left){
   el.style.top=Math.max(0,Math.min(el.offsetTop,d.clientHeight-el.offsetHeight))+"px";
 }
 
+// Papiere der Reisenden nebeneinander auffächern, damit von jedem der Kopf sichtbar bleibt
+function layoutDocs(els){
+  const d=$("desk"), W=d.clientWidth, L=Math.min(W*.27,300), R=Math.max(L+10,W-150-215);
+  const step=els.length>1?(R-L)/(els.length-1):0;
+  els.forEach((el,i)=>{el.style.left=Math.round(L+i*step)+"px";el.style.top=Math.round(52+(i%2)*30)+"px";el.style.zIndex=++S.z;clampDoc(el)});
+}
+
 // ---------- Dokumente der Reisenden ----------
 function renderTravelerDocs(){
   document.querySelectorAll(".doc:not(.keep)").forEach(e=>e.remove());
-  const t=S.cur, c=t.car;
+  const t=S.cur, c=t.car, row=[];
 
-  placeDoc("id",`<h3>${T("Dowód osobisty","Personalausweis")}</h3><div class="row">${photoHTML(t.photoFace,"id.photo")}<div>
+  row.push(placeDoc("id",`<h3>${T("Dowód osobisty","Personalausweis")}</h3><div class="row">${photoHTML(t.photoFace,"id.photo")}<div>
     <small>Name</small><br><span class="f" data-k="id.name">${t.name}</span><br>
     <small>Geburtsdatum</small><br>${fmt(t.birth)}<br>
-    <small>Wohnort</small><br>${t.city}<br>
-    <small>Ausweisnummer</small><br><span class="f" data-k="id.nr">${t.id}</span></div></div>`,0.28,60);
+    <small>Wohnort</small><br><span class="f" data-k="id.city">${t.city}</span><br>
+    <small>Ausweisnummer</small><br><span class="f" data-k="id.nr">${t.id}</span></div></div>`,0.28,60));
 
-  if(t.hasPermit) placeDoc("permit",`<h3>${T("Przepustka","Passierschein")}</h3>
+  if(t.hasPermit) row.push(placeDoc("permit",`<h3>${T("Przepustka","Passierschein")}</h3>
     <small>Name</small><br><span class="f" data-k="permit.name">${t.permitName}</span><br>
     <small>Reiseziel</small><br><span class="f" data-k="permit.dest">${t.dest}</span><br>
     <small>Gültig bis</small><br><span class="f" data-k="permit.expiry">${fmt(t.permitUntil)}</span><br>
-    <span class="wron">WRON</span>`,0.42,70);
+    <span class="wron">WRON</span>`,0.42,70));
 
-  placeDoc("reg",`<h3>${T("Dowód rejestracyjny","Fahrzeugschein")}</h3>
+  row.push(placeDoc("reg",`<h3>${T("Dowód rejestracyjny","Fahrzeugschein")}</h3>
     <small>Kennzeichen</small><br><span class="f" data-k="reg.plate">${c.regPlate}</span><br>
     <small>Marke und Typ</small><br><span class="f" data-k="reg.model">${CAR_MODELS[c.regModel].name}</span><br>
     <small>Baujahr</small><br>${c.year}<br>
-    <small>Halter</small><br><span class="f" data-k="reg.owner">${c.owner}</span>`,0.55,56);
+    <small>Halter</small><br><span class="f" data-k="reg.owner">${c.owner}</span>`,0.55,56));
 
   const decl=t.bag.filter(i=>i.declared).map(i=>`${i.name}: ${i.declared} ${i.unit}`).join("<br>")||"keine Waren";
-  placeDoc("decl",`<h3>${T("Deklaracja celna","Zollerklärung")}</h3><small>Angemeldete Waren</small><br>${decl}<br><br>
-    <small>Unterschrift</small><div class="sign">${t.name.split(" ")[1]}</div>`,0.68,80);
+  const cur=S.rules.includes("cur")?`<small>Devisen</small><br><span class="f" data-k="decl.cur">${t.currency} USD</span><br>`:"";
+  row.push(placeDoc("decl",`<h3>${T("Deklaracja celna","Zollerklärung")}</h3><small>Angemeldete Waren</small><br>${decl}<br>${cur}<br>
+    <small>Unterschrift</small><div class="sign">${t.name.split(" ")[1]}</div>`,0.68,80));
 
-  if(t.auth) placeDoc("auth",`<h3>${T("Upoważnienie","Vollmacht")}</h3>Ich, ${c.owner}, bevollmächtige<br>
+  if(t.deleg) row.push(placeDoc("deleg",`<h3>${T("Delegacja","Dienstreiseauftrag")}</h3><small>Betrieb</small><br>${t.deleg.firm}<br>
+    <small>Entsandt wird</small><br><span class="f" data-k="deleg.name">${t.deleg.name}</span><br>
+    <small>Reiseziel</small><br><span class="f" data-k="deleg.dest">${t.deleg.dest}</span><br>
+    <small>Bis</small><br>${fmt(t.deleg.until)}<div class="sign">Dyrektor</div>`,0.6,90));
+
+  if(t.auth) row.push(placeDoc("auth",`<h3>${T("Upoważnienie","Vollmacht")}</h3>Ich, ${c.owner}, bevollmächtige<br>
     <span class="f" data-k="auth.name">${t.name}</span><br>zur Nutzung des Fahrzeugs ${c.regPlate}.
-    <div class="sign">${c.owner.split(" ")[1]}</div>`,0.62,150);
+    <div class="sign">${c.owner.split(" ")[1]}</div>`,0.62,150));
+  layoutDocs(row);
 
-  const pass=placeDoc("pass","",0.36,150,onPassDrop,".ptop");
+  if(t.bribe) placeDoc("env",`<h3>${T("Koperta","Umschlag")}</h3><div class="envbody">Dick. Ohne Aufschrift.</div>
+    <small>Auf die Teczka ziehen: einstecken.<br>In die Durchreiche: zurückgeben.</small>`,0.48,$("desk").clientHeight-150,onEnvDrop);
+
+  const pass=placeDoc("pass","",0.3,Math.max(120,$("desk").clientHeight-240),onPassDrop,".ptop");
   pass.id="passport"; renderPass();
   pass.addEventListener("pointerdown",e=>{
     if(!e.target.closest(".spread")||e.target.closest(".ptop")) return;
@@ -103,7 +121,8 @@ function renderPass(){
       <small>Gültig bis</small><br><span class="f" data-k="pass.expiry">${fmt(t.passExpiry)}</span></div>
     <div class="pg right">${top("")}<small>Frühere Grenzübertritte</small><div class="history">${
       t.history.map(h=>`<span class="old">${h.place}<br>${fmt(h.date)}</span>`).join("")||"<i>keine Einträge</i>"}</div></div>`;
-  else inner=`<div class="pg left">${top("Paszport")}<small>Amtliche Vermerke</small><p class="official">Gültig für Reisen in die DDR.</p></div>
+  else inner=`<div class="pg left">${top("Paszport")}<small>Amtliche Vermerke</small><div class="f official" data-k="pass.exit">Gültig für Reisen in die DDR.${
+      S.rules.includes("exit")&&t.exitStamp?`<span class="exitmark">MILICJA OBYWATELSKA<br>ZGODA NA WYJAZD<br><small>${fmt(t.exitDate)}</small></span>`:""}</div></div>
     <div class="pg right">${top("")}<small>Kontrollstempel</small><div class="stampArea" id="stampArea">${S.mark?imprintHTML(S.mark):""}</div></div>`;
   el.innerHTML=`<div class="spread">${inner}</div>`;
   clampDoc(el);
@@ -193,7 +212,7 @@ function onStampDrop(st){
         if(ir.left<a.left) dx=a.left-ir.left; else if(ir.right>a.right) dx=a.right-ir.right;
         if(ir.top<a.top) dy=a.top-ir.top; else if(ir.bottom>a.bottom) dy=a.bottom-ir.bottom;
         if(dx||dy){S.mark.x+=dx/a.width*100;S.mark.y+=dy/a.height*100;area.innerHTML=imprintHTML(S.mark)}
-        st.classList.add("press"); setTimeout(()=>st.classList.remove("press"),150);
+        st.classList.add("press"); setTimeout(()=>st.classList.remove("press"),150); SFX.play("stamp");
       }
     } else toast("Daneben. Setze den Stempel auf die Stempelseite.","info");
   }
@@ -236,7 +255,8 @@ function markSelected(){
 }
 function comparePair(a,b){
   const t=S.cur, c=t.car, has=(x,y)=>(a===x&&b===y)||(a===y&&b===x);
-  const val={"id.name":t.name,"pass.name":t.passName,"permit.name":t.permitName,"auth.name":t.name,"id.nr":t.id,"pass.nr":t.passId};
+  const rr=compareRules(a,b,t); if(rr!==undefined) return rr;
+  const val={"id.name":t.name,"pass.name":t.passName,"permit.name":t.permitName,"auth.name":t.name,"deleg.name":t.deleg&&t.deleg.name,"id.nr":t.id,"pass.nr":t.passId};
   const isName=k=>k.endsWith(".name"), isPhoto=k=>k.endsWith(".photo"), isWanted=k=>k.startsWith("wanted.");
   const isFace=k=>k==="face"||isPhoto(k);
   if((isWanted(a)&&isFace(b))||(isWanted(b)&&isFace(a))){

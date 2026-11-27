@@ -9,7 +9,7 @@ function openOutside(){
   S.outArea=null; S.bagView=false; S.pendingSeize=null;
   setSearchMsg((S.cur.contraband?"„Ist das wirklich nötig, Genosse?“ ":"„Bitte sehr.“ ")+
     "Die leuchtenden Teile kannst du öffnen: Klappen nach oben wischen, Türen zur Seite ziehen. Kennzeichen am Heck antippen zum Notieren.");
-  $("outside").classList.add("show");
+  $("outside").classList.add("show"); SFX.play("door"); SFX.setOutside(true);
   renderOutside();
 }
 function renderOutside(){
@@ -77,7 +77,7 @@ $("carStage").addEventListener("click",e=>{
 $("suitcase").addEventListener("click",e=>{
   if(S.busy) return;
   const l=e.target.closest("[data-latch]");
-  if(l) S.latches[+l.dataset.latch]=true;
+  if(l){S.latches[+l.dataset.latch]=true;SFX.play("latch")}
   if(S.latches[0]&&S.latches[1]){
     if(!S.bagView){S.bagView=true;S.outArea=null;S.pendingSeize=null;S.min+=COST.area;updateHUD()}
     setSearchMsg("Vergleiche mit der Deklaracja. Ware doppelt antippen zum Beschlagnahmen, Fächer mit Werkzeug prüfen.");
@@ -107,7 +107,7 @@ function applyTool(tool,id){
   if(tool==="knock"){
     if(type!=="panel") return setSearchMsg("Klopfen bringt hier nichts.");
     const full=(!!S.cur.contraband&&S.cur.contraband.spot===id)||S.cur.falseSpot===id;
-    S.min+=COST.knock; S.spotNote[id]=full?"klingt dumpf":"klingt hohl";
+    S.min+=COST.knock; S.spotNote[id]=full?"klingt dumpf":"klingt hohl"; SFX.play("knock");
     setSearchMsg(name+": "+(full?"dumpf und voll. Da könnte etwas drin sein.":"hohl, klingt normal."));
   } else if(tool==="lamp"){
     if(type==="panel") return openClose(id,"lamp");
@@ -158,5 +158,5 @@ document.querySelectorAll(".tooli").forEach(el=>freeDrag(el,(x,y)=>dropTool(el.d
 
 $("bDoor").onclick=()=>{
   if(S.close){finishClose();S.close=null}
-  $("outside").classList.remove("show");
+  $("outside").classList.remove("show"); SFX.play("door"); SFX.setOutside(false);
 };
