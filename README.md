@@ -21,16 +21,9 @@ neue oder geänderte Regeln und Tagesanweisungen. Wiederkehrende Figuren stellen
 Am Abend kaufst du Essen, Trinken, Kohle und Medizin. Wer zu oft scheitert, verliert die Familie oder den Job.
 Der Spielstand wird im Browser gespeichert.
 
-## Dateien
-| Datei | Inhalt |
-|---|---|
-| `index.html`, `style.css` | Oberfläche und Gestaltung |
-| `data.js` | Namen, Autos, Fehlerarten, Erzeugung der Reisenden |
-| `rules.js` | Regeln der Dienstanweisung und ihre Prüfung |
-| `story.js` | Kampagne, Zeitungstexte, Tagesanweisungen, Figuren |
-| `pixel.js` | Alle Grafiken, im Code gezeichnet |
-| `audio.js` | Alle Geräusche, im Code erzeugt |
-| `documents.js`, `hut.js`, `interrogation.js`, `car.js`, `tools.js` | Spielmechaniken in der Hütte und draußen |
-| `family.js`, `newspaper.js`, `save.js`, `game.js` | Abrechnung, Zeitung, Speichern, Spielablauf |
 
-Bei jedem Update wird die Versionsnummer in `index.html` (`?v=…`) erhöht, damit Browser die neuen Dateien laden.
+quellen:
+https://www.rmf24.pl/fakty/polska/news-archiwalne-nagranie-gen-jaruzelski-oglasza-wprowadzenie-stan,nId,1431821
+https://teatrnn.pl/wydarzenia/wydarzenie/przemowienie-generala-wojciecha-jaruzelskiego/
+https://dzieje.pl/aktualnosci/gen-jaruzelski-o-stanie-wojennym
+https://wydarzenia.interia.pl/historia/news-wojna-polsko-jaruzelska,nId,7873361
