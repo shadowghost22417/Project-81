@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -30,6 +30,7 @@
       <canvas id="clockCanvas" class="px" width="34" height="34"></canvas>
       <div id="calendar" data-k="date"><div id="calMonth"></div><div id="calDay"></div><div id="calYear"></div></div>
       <div id="note"></div>
+      <button id="mute" class="door">Ton an</button>
     </div>
   </div>
   <div id="desk">
@@ -49,13 +50,14 @@
 
 <div class="overlay show" id="startScreen">
   <h2>Grenzübergang Zgorzelec</h2>
-  <p>14. Dezember 1981. Seit gestern gilt das Kriegsrecht. Du sitzt in der Kontrollhütte an der Grenze zur DDR.
-  Prüfe Papiere, Autos und Gepäck. Um 22 Uhr beginnt die Sperrstunde.</p>
+  <p>Dezember 1981. Seit gestern gilt das Kriegsrecht. Du sitzt in der Kontrollhütte an der Grenze zur DDR.
+  Prüfe Papiere, Autos und Gepäck. Zu Hause warten Ewa, Kasia und Tomek darauf, dass dein Lohn für Essen und Kohle reicht.</p>
   <p class="soft">Tippe die Person an, um mit ihr zu reden, und das Auto, um hinauszugehen. Das Kennzeichen liest du draußen ab,
   das Modell bestimmst du mit den Fahrzeugtypen aus der Teczka. Mit dem Rotstift kreist du Widersprüche ein,
-  die Handschellen ziehst du auf die Person.</p>
-  <button class="big" id="bStart">Schicht beginnen</button>
-  <p class="soft version">Version 2</p>
+  die Handschellen ziehst du auf die Person. Das Dalekopis sagt dir, worauf du heute besonders achten sollst.</p>
+  <div class="btns"><button class="big" id="bContinue" style="display:none">Fortsetzen</button>
+  <button class="big" id="bStart">Neues Spiel</button></div>
+  <p class="soft version">Version 3 · Kapitel 1: Kriegsrecht</p>
 </div>
 
 <div class="overlay outside" id="outside">
@@ -84,17 +86,34 @@
 
 <div class="overlay" id="dayEnd">
   <h2>Sperrstunde</h2>
-  <p id="dayEndText"></p>
-  <button class="big" id="bNextDay">Nächste Schicht</button>
+  <div id="ledger"></div>
+  <button class="big" id="bNextDay">Einkaufen und schlafen</button>
 </div>
 
-<script src="data.js?v=2"></script>
-<script src="pixel.js?v=2"></script>
-<script src="documents.js?v=2"></script>
-<script src="hut.js?v=2"></script>
-<script src="car.js?v=2"></script>
-<script src="tools.js?v=2"></script>
-<script src="interrogation.js?v=2"></script>
-<script src="game.js?v=2"></script>
+<div class="overlay" id="paper">
+  <div class="news" id="newsSheet"></div>
+  <button class="big" id="bToShift">Zur Schicht</button>
+</div>
+
+<div class="overlay" id="gameOver">
+  <h2 id="goTitle"></h2>
+  <p id="goText"></p>
+  <div class="btns"><button class="big" id="bRetry">Tag wiederholen</button><button class="big" id="bNewGame">Neues Spiel</button></div>
+</div>
+
+<script src="data.js?v=3"></script>
+<script src="rules.js?v=3"></script>
+<script src="story.js?v=3"></script>
+<script src="pixel.js?v=3"></script>
+<script src="audio.js?v=3"></script>
+<script src="documents.js?v=3"></script>
+<script src="hut.js?v=3"></script>
+<script src="car.js?v=3"></script>
+<script src="tools.js?v=3"></script>
+<script src="interrogation.js?v=3"></script>
+<script src="family.js?v=3"></script>
+<script src="newspaper.js?v=3"></script>
+<script src="save.js?v=3"></script>
+<script src="game.js?v=3"></script>
 </body>
 </html>

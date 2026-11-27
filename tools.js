@@ -44,7 +44,7 @@ function finishClose(){
   if(c.tool==="knife"&&c.cutLen>0){
     S.min+=Math.min(30,3+Math.round(c.cutLen/15));
     if(S.spotState[c.id]!=="hit"){
-      const pen=Math.min(60,10+Math.round(c.cutLen/6));
+      const pen=Math.min(30,5+Math.round(c.cutLen/10));
       S.money-=pen; S.spotState[c.id]="open"; S.spotNote[c.id]="aufgeschnitten, leer";
       setSearchMsg(c.name+" aufgeschnitten, nichts gefunden. Beschwerde: −"+pen+" zł.");
     }
@@ -114,7 +114,7 @@ function buildKnife(box,c){
       const len=Math.hypot(b.x-a.x,b.y-a.y);
       if(len<6){drawSeat(c);return}
       const cut={a,b,w:0,target:Math.min(16,3+len*.17)};
-      c.cuts.push(cut); c.cutLen+=len; c.anim=true;
+      c.cuts.push(cut); c.cutLen+=len; c.anim=true; SFX.play("cut");
       const t0=performance.now();
       const step=now=>{
         const k=Math.min(1,(now-t0)/320);
@@ -146,7 +146,7 @@ function buildScrew(box,c){
       if(s.classList.contains("gone")||c.opened) return;
       e.preventDefault(); s.setPointerCapture(e.pointerId); s.classList.add("turning");
       timer=setTimeout(()=>{
-        timer=null; s.classList.remove("turning"); s.classList.add("gone"); c.screws++; S.min+=2; updateHUD();
+        timer=null; s.classList.remove("turning"); s.classList.add("gone"); c.screws++; S.min+=2; updateHUD(); SFX.play("screw");
         if(c.screws===4) openPanel(c,false); else setSearchMsg("Schraube raus. Noch "+(4-c.screws)+".");
       },700);
     });
@@ -171,7 +171,7 @@ function buildBar(box,c){
       const dy=Math.max(0,Math.min(90,ev.clientY-y0));
       lever.style.transform=`translateY(${Math.round(dy/3)*3}px)`;
       if(dy>70&&!counted&&!c.opened){
-        counted=true; c.pulls++; $("pullCount").textContent=c.pulls;
+        counted=true; c.pulls++; $("pullCount").textContent=c.pulls; SFX.play("pry");
         $("pcover").style.transform=`rotate(${-4*c.pulls}deg)`;
         if(c.pulls>=3){S.min+=8;openPanel(c,true)}
       }

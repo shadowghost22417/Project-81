@@ -1,7 +1,9 @@
 // Einstellungen, Daten und Hilfsfunktionen
 const DAY_START=16*60, DAY_END=22*60, DECIDE_COST=30, ASK_COST=3, WRONG_CHECK=2;
 const COST={look:5,knock:3,area:2};
-const DAMAGE=30, WRONG_SEIZE=20, WRONG_ARREST=200;
+const DAMAGE=15, WRONG_SEIZE=10, WRONG_ARREST=100;
+// Lohn in Złoty (wird mit dem Lohnfaktor des Tages multipliziert)
+const PAY={base:60,correct:10,arrestProof:25,arrestNoProof:10,error:20,order:25,sb:60};
 const TOOL_SHORT={knife:"Messer",screw:"Schraubenzieher",bar:"Brecheisen"};
 const TOOL_ACC={knife:"das Messer",screw:"den Schraubenzieher",bar:"das Brecheisen"};
 
@@ -69,7 +71,6 @@ const FLAWS={
   destLie:{text:"Die Person log beim Reiseziel.",forgery:true},
   wanted:{text:"Die Person stand auf dem List gończy.",forgery:true}
 };
-const RANDOM_FLAWS=Object.keys(FLAWS).filter(k=>k!=="wanted");
 const DIACRITICS={"ą":"a","ć":"c","ę":"e","ł":"l","ń":"n","ó":"o","ś":"s","ź":"z","ż":"z","Ł":"L","Ś":"S","Ż":"Z","Ź":"Z"};
 
 const $=id=>document.getElementById(id);
@@ -120,19 +121,47 @@ function panelSpots(t){
   return ids;
 }
 
-function makeTraveler(date,wantedList){
-  const wi=wantedList&&wantedList.length&&Math.random()<.12?rint(0,wantedList.length-1):null;
+// ---------- Hilfen für Anweisungen und Figuren ----------
+function setHome(t,ci){
+  const num=t.car.plate.split(" ")[1], plate=PLATE_PREFIX[ci]+" "+num;
+  t.city=CITIES[ci]; if(t.car.regPlate===t.car.plate) t.car.regPlate=plate; t.car.plate=plate;
+}
+function setModel(t,mi){
+  const same=t.car.regModel===t.car.model; t.car.model=mi; if(same) t.car.regModel=mi;
+  t.car.year=Math.max(t.car.year,CAR_MODELS[mi].from);
+  if(t.contraband&&t.contraband.spot.startsWith("c:")) placeContraband(t,t.contraband.item,"car");
+}
+function placeContraband(t,item,where){
+  const m=CAR_MODELS[t.car.model];
+  if(where==="bag"){const bi=rint(0,BAG_SPOTS.length-1);
+    t.contraband={spot:"b:"+bi,item,desc:item+" (Gepäck, "+BAG_SPOTS[bi][0]+")",pos:randPos(),hint:Math.random()<.75};return}
+  let ai,si;
+  if(where&&where.startsWith("c:")){[ai,si]=where.slice(2).split(":").map(Number);if(!m.areas[ai]||!m.areas[ai][2][si]){ai=null}}
+  if(ai==null){ai=rint(0,m.areas.length-1);si=rint(0,m.areas[ai][2].length-1)}
+  const sp=m.areas[ai][2];
+  t.contraband={spot:`c:${ai}:${si}`,item,desc:item+" ("+sp[si][0]+")",pos:randPos(),hint:Math.random()<.75};
+}
+const DELEG_FIRMS=["Kombinat Budowlany Wrocław","Huta Katowice","FSO Warszawa","PKP Dyrekcja Zachodnia","Zakłady Azotowe Kędzierzyn"];
+
+// opts.flaw: undefined = zufällig, null = keiner, sonst feste Fehlerart; opts.clean = ohne Schmuggel
+function makeTraveler(date,wantedList,opts={}){
+  const day=today(), rules=S.rules||BASE_RULES, randomFlaws=flawsFor(rules);
+  const wi=opts.flaw===undefined&&wantedList&&wantedList.length&&Math.random()<.12?rint(0,wantedList.length-1):null;
   const W=wi!==null?wantedList[wi]:null;
   const female=W?W.female:Math.random()<.5, li=rint(0,LAST.length-1);
   const first=female?pick(FIRST_F):pick(FIRST_M), name=first+" "+LAST[li][female?1:0];
-  const face=W?W.face:randomFace(female), ci=rint(0,CITIES.length-1), mi=rint(0,CAR_MODELS.length-1);
+  const allowed=CITIES.map((c,i)=>i).filter(i=>!day.banned.includes(CITIES[i]));
+  const face=W?W.face:randomFace(female), ci=pick(allowed), mi=rint(0,CAR_MODELS.length-1);
   const plate=PLATE_PREFIX[ci]+" "+rint(1000,9999);
   const t={name,female,face,photoFace:face,passName:name,permitName:name,seed:rint(1,99999),
     birth:new Date(rint(1920,1963),rint(0,11),rint(1,28)),city:CITIES[ci],dest:pick(DESTS),
     id:idNr(),passNr:"ZA "+rint(1000000,9999999),passExpiry:addDays(date,rint(30,1500)),
     permitUntil:addDays(date,rint(0,30)),hasPermit:true,
     car:{model:mi,regModel:mi,plate,regPlate:plate,owner:name,color:pick(CAR_COLORS),year:rint(CAR_MODELS[mi].from,1981)},
-    auth:false,bag:[],flaw:null,wanted:wi,contraband:null,falseSpot:null,falseHintPos:null,history:[]};
+    auth:false,bag:[],flaw:null,wanted:wi,contraband:null,falseSpot:null,falseHintPos:null,history:[],
+    exitStamp:true,currency:0,deleg:null,bribe:0,order:null,script:null};
+  const purpose=pick(PURPOSES);
+  if(rules.includes("cur")&&Math.random()<.5) t.currency=rint(1,day.curLimit/10)*10;
   t.passId=t.id;
   for(let i=rint(0,3);i>0;i--) t.history.push({place:pick(BORDER_PLACES),date:addDays(date,-rint(30,2500))});
   t.history.sort((a,b)=>b.date-a.date);
@@ -142,8 +171,9 @@ function makeTraveler(date,wantedList){
   if(Math.random()<.2){t.car.owner=randomName(name);t.auth=true}
 
   if(W) t.flaw="wanted";
-  else if(Math.random()<.45){
-    t.flaw=pick(RANDOM_FLAWS);
+  else if(opts.flaw!==undefined) t.flaw=opts.flaw;
+  else if(Math.random()<.45) t.flaw=pick(randomFlaws);
+  if(t.flaw&&t.flaw!=="wanted"){
     switch(t.flaw){
       case "expired": t.passExpiry=addDays(date,-rint(1,400)); break;
       case "permitExpired": t.permitUntil=addDays(date,-rint(1,20)); break;
@@ -156,10 +186,18 @@ function makeTraveler(date,wantedList){
       case "modelMismatch":{let o;do{o=rint(0,CAR_MODELS.length-1)}while(o===mi);t.car.regModel=o;break}
       case "plateMismatch": t.car.regPlate=alterPlate(plate); break;
       case "noAuth": t.car.owner=randomName(name); t.auth=false; break;
+      case "bannedCity": setHome(t,CITIES.indexOf(pick(day.banned))); break;
+      case "noExitStamp": t.exitStamp=false; break;
+      case "currencyLimit": t.currency=day.curLimit+rint(1,10)*10; break;
     }
   }
+  t.purpose=["noDeleg","delegDest"].includes(t.flaw)?"Dienstreise":purpose;
+  if(rules.includes("deleg")&&t.purpose==="Dienstreise"&&t.flaw!=="noDeleg"){
+    let dd=t.dest; if(t.flaw==="delegDest") do{dd=pick(DESTS)}while(dd===t.dest);
+    t.deleg={name,firm:pick(DELEG_FIRMS),dest:dd,until:addDays(date,rint(1,14))};
+  }
 
-  if(Math.random()<.3){
+  if(!opts.clean&&Math.random()<.3){
     const r=Math.random(), m=CAR_MODELS[mi], item=pick(GOODS);
     if(r<.5){
       const ai=rint(0,m.areas.length-1), sp=m.areas[ai][2], si=rint(0,sp.length-1);
@@ -180,9 +218,10 @@ function makeTraveler(date,wantedList){
   }
   let dest=t.dest;
   if(t.flaw==="destLie"){do{dest=pick(DESTS)}while(dest===t.dest)}
-  t.answers={dest,claimOwner:t.flaw==="noAuth"?name:t.car.owner,purpose:pick(PURPOSES),
+  t.answers={dest,claimOwner:t.flaw==="noAuth"?name:t.car.owner,purpose:t.purpose,
     declare:t.contraband&&Math.random()<.6?"Nein, gar nichts.":"Nur das, was auf der Deklaracja steht.",
     stay:pick(STAYS),nervous:(!!t.contraband||(!!t.flaw&&FLAWS[t.flaw].forgery))&&Math.random()<.6};
   t.line=t.contraband&&Math.random()<.5?pick(NERVOUS):pick(LINES);
+  if((t.contraband||(t.flaw&&FLAWS[t.flaw].forgery))&&Math.random()<.2) t.bribe=rint(4,12)*10;
   return t;
 }

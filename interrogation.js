@@ -34,7 +34,7 @@ function renderProtocol(){
   const a=S.cur.answers, rows=[];
   if(S.asked.dest) rows.push(`<small>Reiseziel laut Aussage</small><br><span class="f" data-k="ans.dest">${a.dest}</span>`);
   if(S.asked.owner) rows.push(`<small>Halter laut Aussage</small><br><span class="f" data-k="ans.owner">${a.claimOwner}</span>`);
-  if(S.asked.purpose) rows.push(`<small>Zweck</small><br>${a.purpose}`);
+  if(S.asked.purpose) rows.push(`<small>Zweck</small><br><span class="f" data-k="ans.purpose">${a.purpose}</span>`);
   if(S.asked.declare) rows.push(`<small>Anzumelden</small><br>${a.declare}`);
   if(S.asked.stay) rows.push(`<small>Aufenthalt</small><br>${a.stay}`);
   if(Object.keys(S.asked).length&&a.nervous) rows.push(`<small>Bemerkung</small><br>wirkt nervös`);
