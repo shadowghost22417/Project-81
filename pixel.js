@@ -186,12 +186,12 @@ function hashF(f){const s=JSON.stringify(f);let h=7;for(let i=0;i<s.length;i++)h
 const USH_FUR=["#6a5e4e","#5c5850","#4a4038","#7a7266"];
 function portrait(f,photo){
   const c=mk(58,68),p=P(c),h=hashF(f),cx=29,fem=f.female;
-  const sk=gramp(shade(mix(f.skin,"#8b9472",fem?.34:.42),fem?-.02:-.06)), hr=gramp(mute(f.hair,.35)), co=gramp(shade(mute(f.coat,.5),-.12));
+  const sk=gramp(shade(mute(mix(f.skin,"#8b9472",fem?.34:.42),.4),fem?-.04:-.08)), hr=gramp(mute(f.hair,.35)), co=gramp(shade(mute(f.coat,.5),-.12));
   const hood=f.hat&&!photo, old=!fem&&h%5<2, gaunt=!fem&&h%3!==1, bald=!fem&&h%4===0;
   const hat=hood?(fem?(h%3===0?"ushanka":"scarf"):(h%3!==0?"ushanka":"cap")):null;
   const expr=["neutral","sad","neutral","angry","neutral","sad","angry"][(h>>4)%7];
   const hairStyle=(h>>2)%3; // Frauen: 0 lang, 1 Dauerwelle, 2 Bob
-  const shadowEyes=!photo&&(hood||h%7===0);
+  const shadowEyes=hood;
   const dark=shade(sk[4],-.4), mouth=shade(sk[4],-.25);
   // Mantel mit hängenden Schultern und hochgeschlagenem Kragen
   p.ell(cx,77,29,28,(x,y,u)=>band(co,.2+(u+1)*.34,x,y),(x,y)=>y<68);
@@ -239,7 +239,10 @@ function portrait(f,photo){
     p.rect(ex-2,24,4,1,"#8f8c7a");p.dot(ex,24,"#0d0c0a");p.dot(ex+(s>0?1:-1),24,"#0d0c0a");
     p.rect(ex-2,23,5,1,expr==="angry"?dark:sk[4]);
     if(fem) p.dot(s>0?ex-3:ex+3,23,dark);
-    else{p.rect(ex-2,26,5,1,sk[3]);p.rect(ex-1,27,3,1,s>0?sk[2]:sk[3])}
+    // Leichte Augenringe bei allen
+    const ring=mix(sk[3],"#4a4652",.3);
+    p.rect(ex-2,26,5,1,ring);
+    for(let x=ex-1;x<=ex+1;x++)if(!fem||(x+27)&1)p.dot(x,27,s>0?mix(sk[2],ring,.5):ring);
     const brow=fem?shade(hr[3],-.1):hr[4];
     for(let i=0;i<5;i++){const x=s>0?ex-2+i:ex+2-i;
       const y=expr==="sad"&&i>=3?20:expr==="angry"&&i>=3?22:21;
@@ -268,7 +271,10 @@ function portrait(f,photo){
   if(f.beard) p.ell(cx,35,11,7,(x,y)=>((x*3+y)&1)?hr[3]:hr[4],(x,y)=>keepHead(x,y)&&y>=31&&!(y===34&&Math.abs(x-cx)<4));
   else if(!fem&&h%3===0) p.ell(cx,36,10,6,(x,y)=>((x*3+y*5)%4===0)?shade(hr[3],-.1):null,(x,y)=>keepHead(x,y)&&y>=32&&!(y>=33&&y<=35&&Math.abs(x-cx)<5));
   if(f.glasses){const gc="#0f0e0c";
-    [[cx-9,cx-3],[cx+2,cx+8]].forEach(([a,b])=>{p.rect(a,22,b-a+1,1,gc);p.rect(a,26,b-a+1,1,gc);p.rect(a,22,1,5,gc);p.rect(b,22,1,5,gc);p.dot(a+1,23,"#7f877c")});
+    [[cx-9,cx-3],[cx+2,cx+8]].forEach(([a,b])=>{p.rect(a,22,b-a+1,1,gc);p.rect(a,26,b-a+1,1,gc);p.rect(a,22,1,5,gc);p.rect(b,22,1,5,gc);
+      // Leichter Glanz auf dem Glas
+      for(let y=23;y<=25;y++)for(let x=a+1;x<b;x++)p.dot(x,y,"rgba(200,210,200,.14)");
+      const k=a<cx?.6:.35;p.dot(a+3,23,`rgba(235,240,228,${k})`);p.dot(a+2,24,`rgba(235,240,228,${k})`);p.dot(a+1,25,`rgba(235,240,228,${k*.5})`)});
     p.rect(cx-3,23,5,1,gc)}
   // Kopfbedeckungen
   if(hat==="scarf"){const sc=gramp(mute(SCARVES[h%SCARVES.length],.3));
