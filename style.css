@@ -223,3 +223,4 @@ body.checking .f,body.checking #calendar{background-color:rgba(208,168,58,.3);cu
 .patch{position:absolute;left:30%;top:30%;width:90px;height:60px;background-size:100% 100%}
 .lever{position:absolute;right:8%;top:8%;width:36px;height:138px;background-size:100% 100%;touch-action:none}
 .pulls{position:absolute;left:10px;bottom:8px;color:#fff;font:20px VT323,monospace;text-shadow:2px 2px 0 #000}
+.overlay p.version{font-size:15px;opacity:.6}
