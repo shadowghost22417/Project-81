@@ -273,3 +273,68 @@ body.checking .f,body.checking #calendar{background-color:rgba(208,168,58,.3);cu
 .st.ok{color:#8aa07a}.st.warn{color:#c9a46a}.st.sick{color:#d08a4f}.st.crit{color:#e0524a}
 @media (max-width:640px){#ledger{grid-template-columns:1fr}}
 #gameOver p{max-width:640px}
+
+/* ---------- Version 4 ---------- */
+/* Startbildschirm */
+.overlay.title{padding:0;justify-content:center;background:#0a0c0b}
+#titleCanvas,#titleSnowCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.titleBox{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px;max-width:640px}
+.gameTitle{margin:0;font:600 clamp(40px,9vw,84px)/1 "Pixelify Sans",monospace;color:#d6d1c0;letter-spacing:3px;
+  text-shadow:4px 4px 0 #000,0 0 18px rgba(0,0,0,.8)}
+.subtitle{margin:0;font:22px VT323,monospace;color:#b8a678;text-shadow:2px 2px 0 #000}
+.menu{display:flex;flex-direction:column;gap:10px;width:min(320px,86vw);margin-top:10px}
+.menu .big{width:100%}
+.big.alt{background:var(--btn);border-color:var(--btn-hi) var(--btn-lo) var(--btn-lo) var(--btn-hi);color:var(--text)}
+.help{background:rgba(10,12,11,.88);border:3px solid #000;padding:10px 14px;text-align:left}
+.help p{font:19px/1.15 VT323,monospace;margin:0 0 8px}
+.titleBox .version{margin:0;font:15px VT323,monospace;color:var(--muted);text-shadow:2px 2px 0 #000}
+
+/* Einstellungen */
+.setlist{display:flex;flex-direction:column;gap:10px;width:min(520px,92vw);text-align:left;font:20px VT323,monospace}
+.setrow{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:6px 10px;background:var(--btn);border:3px solid;
+  border-color:var(--btn-hi) var(--btn-lo) var(--btn-lo) var(--btn-hi)}
+.setrow input[type=checkbox]{width:22px;height:22px;accent-color:#8a2a25}
+.setrow input[type=range]{width:160px;accent-color:#8a2a25}
+.setrow select{font:18px VT323,monospace;background:#1b1d1a;color:var(--text);border:2px solid var(--btn-hi);padding:2px 4px}
+#bSettings2{min-height:32px;padding:0 10px;font:16px VT323,monospace;margin-top:auto;margin-bottom:10px}
+
+/* Intro: Fernseher */
+#intro{background:#050605;cursor:pointer}
+.tv{width:min(92vw,640px);aspect-ratio:128/96;filter:drop-shadow(0 0 24px rgba(140,150,170,.18))}
+#tvCanvas{width:100%;height:100%;display:block}
+.tvsub{width:min(92vw,640px);min-height:92px;text-align:center;display:flex;flex-direction:column;gap:4px}
+.tvsub .pl{font:600 18px/1.2 "Pixelify Sans",monospace;color:#e2ddcc;text-shadow:2px 2px 0 #000}
+.tvsub .de{font:20px/1.1 VT323,monospace;color:#b8a678}
+.tvcap{margin:0;font:15px VT323,monospace;color:var(--muted)}
+
+/* Familie am Tagesende */
+#homeCanvas{width:min(94vw,660px);aspect-ratio:220/84;border:3px solid #000;box-shadow:5px 5px 0 #000}
+#dayEnd{justify-content:flex-start;padding-top:16px}
+#bSettings2{position:absolute;right:4px;top:4px;margin:0;z-index:2;min-height:30px;width:30px;padding:0;font:18px/1 sans-serif}
+.chip.confront{border-color:#a8524a #3e1512 #3e1512 #a8524a;background:#4a2622}
+.confessed{color:#8a2a25;font:600 15px "Pixelify Sans",monospace;letter-spacing:1px}
+#askMenu{max-height:calc(100% - 70px);overflow:auto}
+/* Innenansichten */
+.interior{position:relative;width:100%;max-width:640px;margin:0 auto;aspect-ratio:160/80;border:3px solid #0b0b0a;box-shadow:5px 5px 0 #000;background:#111}
+.interior>img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hs{position:absolute;padding:0;border:2px dashed rgba(200,190,150,.35);background:transparent;cursor:pointer;display:flex;align-items:flex-end;justify-content:center}
+.hs:hover,.hs:focus-visible{border-color:#d8c27a;background:rgba(216,194,122,.08)}
+.hs.dark{border-color:rgba(120,120,110,.3)}
+.hs.open{border-style:solid;border-color:rgba(120,120,110,.25)}
+.hs.hit{border:2px solid #d0544f}
+.hl{display:flex;flex-direction:column;align-items:center;max-width:100%;padding:0 4px;margin-bottom:-2px;background:rgba(8,9,8,.72);
+  font:15px/1 VT323,monospace;color:#d6d1c0;pointer-events:none;white-space:nowrap;overflow:hidden}
+.hl b{font-weight:normal}.hl small{font-size:13px;color:#b8a678}
+.tiles.goods{margin-top:10px}
+/* Zeitung: Foto und handschriftliche Zettel */
+.nphoto{margin:0 0 10px}
+.nphoto img{width:100%;display:block;border:2px solid #1b1a16;aspect-ratio:120/72}
+.nphoto figcaption{font:15px/1.1 VT323,monospace;opacity:.8;margin-top:3px}
+.hand{position:relative;background:#e4dcc0;color:#1f2a52;padding:12px 12px 8px;margin:6px 4px 14px;box-shadow:3px 3px 0 rgba(0,0,0,.35);
+  font:500 21px/1.15 Caveat,"Comic Sans MS",cursive}
+.hand b{font:700 22px Caveat,cursive;display:block}
+.hand p{margin:2px 0 4px}
+.hand.tilt1{transform:rotate(-1.6deg)}
+.hand.tilt2{transform:rotate(1.2deg);background:#dcd7c6}
+.tape{position:absolute;top:-7px;left:50%;width:54px;height:14px;transform:translateX(-50%) rotate(-3deg);background:rgba(220,214,180,.75);border:1px solid rgba(0,0,0,.08)}
+.chip{min-height:32px;font-size:17px}

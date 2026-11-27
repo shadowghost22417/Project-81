@@ -187,14 +187,14 @@ const USH_FUR=["#6a5e4e","#5c5850","#4a4038","#7a7266"];
 function portrait(f,photo){
   const c=mk(58,68),p=P(c),h=hashF(f),cx=29,fem=f.female;
   const sk=gramp(shade(mute(mix(f.skin,"#8b9472",fem?.34:.42),.4),fem?-.04:-.08)), hr=gramp(mute(f.hair,.35)), co=gramp(shade(mute(f.coat,.5),-.12));
-  const hood=f.hat&&!photo, old=!fem&&h%5<2, gaunt=!fem&&h%3!==1, bald=!fem&&h%4===0;
+  const child=!!f.child, hood=f.hat&&!photo, old=!fem&&!child&&h%5<2, gaunt=!fem&&!child&&h%3!==1, bald=!fem&&!child&&h%4===0;
   const hat=hood?(fem?(h%3===0?"ushanka":"scarf"):(h%3!==0?"ushanka":"cap")):null;
   const expr=["neutral","sad","neutral","angry","neutral","sad","angry"][(h>>4)%7];
   const hairStyle=(h>>2)%3; // Frauen: 0 lang, 1 Dauerwelle, 2 Bob
   const shadowEyes=hood;
   const dark=shade(sk[4],-.4), mouth=shade(sk[4],-.25);
   // Mantel mit hängenden Schultern und hochgeschlagenem Kragen
-  p.ell(cx,77,29,28,(x,y,u)=>band(co,.2+(u+1)*.34,x,y),(x,y)=>y<68);
+  p.ell(cx,77,child?22:29,28,(x,y,u)=>band(co,.2+(u+1)*.34,x,y),(x,y)=>y<68);
   p.poly([[cx-6,45],[cx+6,45],[cx+1,60],[cx-1,60]],h%2?"#1d1e1b":"#2e2822");
   p.poly([[cx-6,43],[cx-16,50],[cx-13,62],[cx-3,52]],co[1]);p.line(cx-6,43,cx-16,50,co[0]);
   p.poly([[cx+6,43],[cx+16,50],[cx+13,62],[cx+3,52]],co[3]);
@@ -211,7 +211,7 @@ function portrait(f,photo){
     else p.ell(cx,25,14,13,hairT,(x,y)=>y>11&&y<=31);
   }
   // Kopf: schmal, zum Kinn hin verjüngt
-  const hy=26,rx=fem?10:11,ry=15,inHead=new Set(),taper=fem?.55:.42;
+  const hy=child?27:26,rx=child?10:fem?10:11,ry=child?14:15,inHead=new Set(),taper=fem?.55:.42;
   for(let y=hy-ry;y<=hy+ry;y++){const v=(y-hy)/ry;let w=rx*Math.sqrt(Math.max(0,1-v*v));if(v>.25)w*=1-(v-.25)*taper;
     for(let x=Math.round(cx-w);x<=Math.round(cx+w);x++){const u=(x-cx)/rx;
       let t=.2+(u+1)*.34+Math.max(0,v)*.14;
@@ -269,7 +269,7 @@ function portrait(f,photo){
   else{p.rect(cx-2,33,5,1,lip);p.rect(cx-3,34,7,1,mouth);p.rect(cx-2,35,5,1,lipLo)}
   p.dot(cx-1,38,sk[1]);
   if(f.beard) p.ell(cx,35,11,7,(x,y)=>((x*3+y)&1)?hr[3]:hr[4],(x,y)=>keepHead(x,y)&&y>=31&&!(y===34&&Math.abs(x-cx)<4));
-  else if(!fem&&h%3===0) p.ell(cx,36,10,6,(x,y)=>((x*3+y*5)%4===0)?shade(hr[3],-.1):null,(x,y)=>keepHead(x,y)&&y>=32&&!(y>=33&&y<=35&&Math.abs(x-cx)<5));
+  else if(!fem&&!child&&h%3===0) p.ell(cx,36,10,6,(x,y)=>((x*3+y*5)%4===0)?shade(hr[3],-.1):null,(x,y)=>keepHead(x,y)&&y>=32&&!(y>=33&&y<=35&&Math.abs(x-cx)<5));
   if(f.glasses){const gc="#0f0e0c";
     [[cx-9,cx-3],[cx+2,cx+8]].forEach(([a,b])=>{p.rect(a,22,b-a+1,1,gc);p.rect(a,26,b-a+1,1,gc);p.rect(a,22,1,5,gc);p.rect(b,22,1,5,gc);
       // Leichter Glanz auf dem Glas
@@ -385,54 +385,130 @@ const TOOL_ICONS={
 };
 
 // ---------- Szene: Blick aus dem Fenster ----------
+// ---------- Hilfen für Szenen ----------
+function scaled(src,k){const c=mk(src.width*k,src.height*k),g=c.getContext("2d");g.imageSmoothingEnabled=false;g.drawImage(src,0,0,c.width,c.height);return c}
+// Leichter Schnee auf Kanten (Mauer, Dächer, Lampen)
+function snowCap(p,x,y,w,h){for(let i=0;i<w;i++){const n=(i*7+x*3)%5;p.rect(x+i,y+(n===0?1:0),1,h-(n===0?1:0),n<2?"#b9bbb2":"#a7aaa1")}}
+const MINI={S:["111","100","111","001","111"],T:["111","010","010","010","010"],O:["111","101","101","101","111"],P:["111","101","111","100","100"]};
+function miniText(p,txt,x,y,col){[...txt].forEach((ch,i)=>{const m=MINI[ch];if(m)m.forEach((r,yy)=>[...r].forEach((b,xx)=>{if(b==="1")p.dot(x+i*4+xx,y+yy,col)}))})}
+function drawSoldier(p,x,y){ // Füße bei y
+  p.rect(x-2,y-10,5,9,"#3d4234");p.rect(x-2,y-10,1,9,"#4d5343");p.rect(x-1,y-1,1,1,"#16170f");p.rect(x+1,y-1,1,1,"#16170f");
+  p.rect(x-1,y-13,3,3,"#a08a72");p.rect(x-2,y-15,5,2,"#4a5040");p.rect(x-3,y-13,7,1,"#3a3f32");
+  p.line(x+3,y-14,x+5,y-3,"#1e1c18");p.dot(x+3,y-15,"#1e1c18");
+}
+function drawBrazier(p,x,y){ // Koksofen: Tonne mit Löchern und Glut
+  p.rect(x-3,y-7,7,7,"#2a2622");for(let i=0;i<3;i++)p.dot(x-2+i*2,y-4,"#e0702a");p.dot(x,y-2,"#c05020");
+  p.rect(x-3,y-8,7,1,"#e8a040");p.dot(x-1,y-9,"#f0c060");p.dot(x+1,y-10,"#e08030");
+  for(let yy=y-14;yy<y+3;yy++)for(let xx=x-10;xx<x+11;xx++)if(((xx+yy)&1)===0&&Math.hypot(xx-x,yy-y+6)<10)p.dot(xx,yy,"rgba(230,130,50,.09)");
+}
+function drawAPC(p,x,y){ // Schützenpanzer (Silhouette) hinter der Mauer
+  p.poly([[x,y],[x+4,y-7],[x+30,y-7],[x+34,y-2],[x+34,y]],"#2a2e26");p.rect(x+12,y-11,9,4,"#262a22");p.rect(x+21,y-10,10,1,"#1e211b");
+  p.rect(x+3,y-5,28,1,"#353a31");
+}
+const FIRE={on:false,x:0,y:0}, XLIGHTS=[];
+
 function drawWindowScene(t){
   const box=$("window"),cv=$("winCanvas");
   const W=Math.max(100,Math.round(box.clientWidth/PXS)),H=Math.max(50,Math.round(box.clientHeight/PXS));
   cv.width=W;cv.height=H;
-  const p=P(cv),R=rng(t?t.seed:3),hz=Math.round(H*.56),N=PAL.night,S=PAL.snow;
+  const p=P(cv),R=rng(t?t.seed:3),hz=Math.round(H*.56),N=PAL.night,Sn=PAL.snow;
+  const cold=typeof isColdMonth==="function"&&S.date&&isColdMonth(S.date), dec81=S.date&&S.date.getFullYear()===1981;
   drawSky(p,W,hz);
   for(let i=0;i<7;i++){const cx=Math.round(R()*W),cy=Math.round(R()*hz*.55),rx=14+Math.round(R()*30);
     p.ell(cx,cy,rx,2,(x,y)=>((x+y)&1)?null:N[N.length-1])}
   drawBlocks(p,W,hz-6,rng(11),1);
   drawFog(p,W,hz-14,hz);
+  // Fahnenmast
+  const fx=Math.round(W*.8);p.rect(fx,hz-34,1,34,"#1a1c18");
+  for(let i=0;i<10;i++){const wv=Math.round(Math.sin(i*.7)*1);p.rect(fx+1+i,hz-34+wv,1,3,"#8d8c84");p.rect(fx+1+i,hz-31+wv,1,3,"#6e2a26")}
+  if(dec81) drawAPC(p,Math.round(W*.6),hz-7);
   drawGround(p,W,H,hz,[.18,.4,.7]);
   for(let y=hz+2;y<H;y++){const s=(y-hz)/(H-hz),c=Math.round(W*.42),off=Math.round(6+s*24);
-    [c-off,c-off+1,c+off,c+off-1].forEach(x=>p.dot(x,y,S[4]))}
+    [c-off,c-off+1,c+off,c+off-1].forEach(x=>p.dot(x,y,Sn[4]))}
   drawConcreteWall(p,W,hz+1,8);
+  if(cold) snowCap(p,0,hz-9,W,2);
   // Wachturm aus Beton
   const tx=Math.round(W*.22),ty=hz-30;
   p.rect(tx+4,ty+9,5,hz-ty-9,"#33362f");p.rect(tx+4,ty+9,1,hz-ty-9,"#4a4d45");
   p.rect(tx-2,ty,17,10,"#3f423b");p.rect(tx-2,ty,1,10,"#555850");
   p.rect(tx,ty+3,13,3,"#0b0c0b");p.rect(tx+2,ty+3,3,3,"#8a7c4c");
   p.rect(tx-4,ty-2,21,2,"#2a2c27");p.rect(tx+6,ty-5,2,3,"#1c1e1a");
+  if(cold){snowCap(p,tx-4,ty-4,21,2);snowCap(p,tx+6,ty-6,2,1)}
   for(let i=0;i<70;i++){const y=ty+2+Math.round(i*.2),x=tx+15+i,s=1+Math.floor(i/9);
     for(let d=-s;d<=s;d++)if(((x+y+d)&1)===0)p.dot(x,y+d,"rgba(190,190,165,.07)")}
+  // Schlange wartender Autos am Horizont
+  const q=t?Math.min(4,t.queue||3):2;
+  for(let i=0;i<q;i++){const c=carSprite((i*2+1)%4,CAR_COLORS[(i*3+1)%CAR_COLORS.length],true),qx=Math.round(W*.3)+i*30,qy=hz-2;
+    p.g.drawImage(c,0,0,c.width,c.height,qx,qy-12,Math.round(c.width*.42),Math.round(c.height*.42));
+    p.dot(qx+46,qy-6,"rgba(230,200,140,.6)")}
+  // Stoppschild
+  const sx0=Math.round(W*.56),sy0=hz-6;
+  p.rect(sx0+8,sy0,1,12,"#1a1c18");p.rect(sx0,sy0-8,18,8,"#7a2622");p.rect(sx0,sy0-8,18,1,"#9a3a32");miniText(p,"STOP",sx0+2,sy0-6,"#d8d4c6");
+  if(cold) snowCap(p,sx0,sy0-9,18,1);
   // Natriumlampe
   const lx=Math.round(W*.9),ly=Math.round(hz*.35);
   for(let y=ly+2;y<H;y++){const hw=Math.round((y-ly)*.42);for(let x=-hw;x<=hw;x++){const a=Math.abs(x)/Math.max(1,hw);
     if(a<.5||(((x+y)&1)===0&&a<.85))p.dot(lx+x,y,y<hz?"rgba(208,164,86,.07)":"rgba(208,164,86,.12)")}}
   p.rect(lx,ly,1,hz+4-ly,"#141613");p.rect(lx-3,ly-1,7,2,"#141613");p.rect(lx-2,ly+1,5,1,PAL.lamp);
+  if(cold) snowCap(p,lx-3,ly-2,7,1);
   p.ell(lx,ly+2,4,2,(x,y)=>((x+y)&1)?"rgba(208,164,86,.3)":null);
+  // Schranke, Soldat, Koksofen
   const by=hz+3,bx=Math.round(W*.5);
   p.rect(bx-2,by-2,4,9,"#141613");p.rect(bx-3,by+6,6,2,"#141613");
-  for(let i=0;i<Math.round(W*.42);i++){const c=Math.floor(i/5)%2?"#8d8b80":"#6a2a24";p.dot(bx+2+i,by,c);p.dot(bx+2+i,by+1,shade(c,-.35))}
+  for(let i=0;i<Math.round(W*.42);i++){const c=Math.floor(i/5)%2?"#8d8b80":"#6a2a24";p.dot(bx+2+i,by,c);p.dot(bx+2+i,by+1,shade(c,-.35));
+    if(cold&&i%4===0)p.dot(bx+2+i,by-1,"#b0b2aa")}
+  drawSoldier(p,Math.round(W*.45),hz+12);
+  FIRE.on=cold; if(cold){FIRE.x=Math.round(W*.485);FIRE.y=hz+12;drawBrazier(p,FIRE.x,FIRE.y)}
+  // Schneeflecken am Boden
+  if(cold) for(let i=0;i<W*.8;i++){const x=Math.round(R()*W),y=hz+2+Math.round(R()*(H-hz-2));p.dith(x,y,2+Math.round(R()*7),1,"rgba(196,200,192,.4)")}
   let carHit=null,manHit=null;
   if(t){
-    const spr=carSprite(t.car.model,t.car.color,true),cx=Math.round(W*.02),cy=Math.round(hz+(H-hz)*.42)-38;
-    p.g.drawImage(spr,cx,cy);carHit=[cx,cy+8,spr.width,spr.height-10];
-    const man=portraitC(t.face,false),mx=Math.round(W*.66)-29,my=H-man.height+4;
-    p.g.drawImage(man,mx,my);manHit=[mx+4,my,man.width-8,man.height-4];
+    const big=W>=260&&H>=90, k=big?2:1;
+    const spr=big?scaled(carSprite(t.car.model,t.car.color,true),2):carSprite(t.car.model,t.car.color,true);
+    const cx=big?-Math.round(spr.width*.36):Math.round(W*.02), cy=big?H-spr.height+8:Math.round(hz+(H-hz)*.42)-38;
+    p.g.drawImage(spr,cx,cy); carHit=[Math.max(0,cx),cy+8*k,spr.width+Math.min(0,cx),spr.height-10*k];
+    const man0=portraitC(t.face,false), man=big?scaled(man0,2):man0;
+    const mx=Math.round(W*.68)-man.width/2, my=big?H-man.height+22:H-man.height+4;
+    p.g.drawImage(man,mx,my); manHit=[mx+4*k,my+6*k,man.width-8*k,H-my-6*k];
   }
-  // Schmutzige Scheibe statt Eisblumen
+  // Schmutzige Scheibe
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dx=Math.min(x,W-1-x),dy=Math.min(y,H-1-y),d=Math.min(dx+dy*1.6,dx*1.6+dy);
     if(d<16){const n=R();if(n<(1-d/16)*.6)p.dot(x,y,n<.12?"rgba(120,124,110,.35)":"rgba(18,20,17,.45)")}}
   for(let i=0;i<Math.min(W,H)*.8;i++){p.dot(Math.round(W*.72)+i,i,"rgba(160,165,150,.07)");p.dot(Math.round(W*.76)+i,i,"rgba(160,165,150,.05)")}
+  if(cold) for(let x=3;x<W-3;x++){const h=1+((x*13)%7===0?2:(x*7)%5===0?1:0);p.rect(x,H-3-h,1,h,"#a9aca3")}
   p.rect(0,0,W,3,"#121311");p.rect(0,H-3,W,3,"#121311");p.rect(0,0,3,H,"#121311");p.rect(W-3,0,3,H,"#121311");
   p.rect(3,3,W-6,1,"#2b2d29");p.rect(3,3,1,H-6,"#2b2d29");
+  drawSillDecor(p,W,H);
   const setHit=(el,h)=>{if(!h){el.style.display="none";return}el.style.display="";
     el.style.left=h[0]/W*100+"%";el.style.top=h[1]/H*100+"%";el.style.width=h[2]/W*100+"%";el.style.height=h[3]/H*100+"%"};
   setHit($("carView"),carHit); setHit($("traveler"),manHit);
   setSnowLayer(0,W,H);
+}
+// Dinge innen am Fenster: Glühbirne, Radio, Teeglas, Thermoskanne, an Weihnachten Baum, Stern und Papierkette
+function drawSillDecor(p,W,H){
+  XLIGHTS.length=0;
+  // Glühbirne am Kabel
+  const bx=Math.round(W*.36);p.rect(bx,0,1,9,"#0c0c0b");p.rect(bx-1,9,3,2,"#2a2824");p.ell(bx,12,2,2,"#e8d49a");p.dot(bx-1,11,"#fff4c8");
+  for(let y=6;y<22;y++)for(let x=bx-10;x<bx+11;x++)if(((x+y)&1)===0&&Math.hypot(x-bx,y-12)<9)p.dot(x,y,"rgba(240,215,150,.08)");
+  // Fensterbrett unten rechts: Radio und Teeglas
+  const rx=W-30, ry=H-3;
+  p.rect(rx,ry-9,18,9,"#4a3a2a");p.rect(rx,ry-9,18,1,"#5e4a36");p.rect(rx+2,ry-7,8,5,"#2a2620");for(let i=0;i<4;i++)p.rect(rx+2,ry-7+i*1+i,8,1,"#3a342c");
+  p.ell(rx+14,ry-5,2,2,"#1c1a16");p.dot(rx+14,ry-6,"#8a7a5a");p.line(rx+16,ry-9,rx+21,ry-16,"#2a2824");
+  const gx=W-8;p.rect(gx,ry-6,4,6,"rgba(170,140,90,.6)");p.rect(gx-1,ry-6,6,1,"#7a6a4a");p.rect(gx+4,ry-4,1,2,"#7a6a4a");
+  p.dot(gx+1,ry-8,"rgba(220,220,210,.35)");p.dot(gx+2,ry-10,"rgba(220,220,210,.25)");p.dot(gx+1,ry-12,"rgba(220,220,210,.15)");
+  // Thermoskanne links
+  p.rect(6,H-15,5,12,"#3a4a3a");p.rect(6,H-15,5,1,"#5a6a5a");p.rect(6,H-17,5,2,"#2a2a28");p.rect(7,H-10,3,2,"#a09a80");
+  if(typeof xmasOn==="function"&&xmasOn()){
+    // Papierkette oben
+    for(let x=4;x<W-4;x++){const y=4+Math.round(Math.abs(Math.sin(x/W*Math.PI*3))*5);p.dot(x,y,["#8a2a25","#b8a040","#3a6a3a"][Math.floor(x/4)%3])}
+    // Stern am Fenster
+    const st=Math.round(W*.5);p.line(st-3,8,st+3,8,"#d8c060");p.line(st,5,st,11,"#d8c060");p.dot(st-2,6,"#d8c060");p.dot(st+2,10,"#d8c060");p.dot(st+2,6,"#d8c060");p.dot(st-2,10,"#d8c060");p.dot(st,8,"#fff0a0");
+    // kleiner Baum auf dem Fensterbrett
+    const tx=16,ty=H-3;
+    for(let i=0;i<4;i++){const w=2+i*2;p.rect(tx-w,ty-16+i*3,w*2+1,3,i%2?"#1e3a26":"#24442c")}
+    p.rect(tx-1,ty-4,3,4,"#4a3420");p.rect(tx-3,ty-2,7,2,"#6a2a24");p.dot(tx,ty-17,"#d8c060");
+    [[-3,-13],[2,-12],[-5,-9],[4,-8],[-1,-7],[6,-5],[-6,-5]].forEach(([dx,dy])=>XLIGHTS.push([tx+dx,ty+dy]));
+  }
 }
 
 // ---------- Fallender Schnee (Fenster und draußen) ----------
@@ -454,6 +530,13 @@ function snowFrame(s,now,move){
     if(move){f.y+=rain?f.v*7:f.v;f.x+=rain?-.4:Math.sin(now/900+f.ph)*.15;if(f.y>s.H){f.y=-3;f.x=Math.random()*s.W}}
     if(rain){g.fillStyle=f.big?"rgba(120,128,128,.5)":"rgba(100,108,108,.35)";g.fillRect(Math.round(f.x),Math.round(f.y),1,f.big?4:3)}
     else{g.fillStyle=f.big?"rgba(170,172,162,.75)":"rgba(140,144,134,.55)";g.fillRect(Math.round(f.x),Math.round(f.y),f.big?2:1,1)}}
+  if(s.id!=="snowCanvas") return;
+  // Funken über dem Koksofen und blinkende Lichterkette
+  if(FIRE.on){const k=Math.floor(now/90);for(let i=0;i<4;i++){const ph=(k+i*7)%14;
+    g.fillStyle=ph<5?"rgba(255,200,90,.9)":"rgba(230,120,50,.6)";g.fillRect(FIRE.x-2+((k*3+i*5)%5),FIRE.y-10-ph,1,1)}
+    g.fillStyle=(k%3)?"rgba(255,150,60,.35)":"rgba(255,190,80,.5)";g.fillRect(FIRE.x-2,FIRE.y-9,5,1)}
+  const on=Math.floor(now/500)%2;
+  XLIGHTS.forEach(([x,y],i)=>{g.fillStyle=((i+on)%2)?["#e05040","#e0c050","#60a0e0"][i%3]:"rgba(80,60,40,.6)";g.fillRect(x,y,1,1)});
 }
 function snowLoop(now){
   if(now-snowLast>60){snowLast=now;SNOWS.forEach(s=>{if(s.W)snowFrame(s,now,true)})}
@@ -476,6 +559,18 @@ function drawWall(){
   for(let y=ws;y<H;y++)for(let x=0;x<W;x++){const g=x%6===0||(y-ws)%5===0,col=g?"#22251f":((Math.floor(x/6)+Math.floor((y-ws)/5))%2?"#363b34":"#3a3f37");
     p.dot(x,y,(!g&&(x*7+y*3)%13===0)?shade(col,-.15):col)}
   p.rect(0,ws,W,2,"#2b2d28");p.rect(0,ws+2,W,1,"#121311");
+  // Kanonenofen mit Rohr unten rechts
+  const ox=W-16,oy=H-4;
+  p.rect(ox+5,ws-20,3,oy-14-ws+20,"#1e1c1a");p.rect(ox+5,ws-20,1,oy-14-ws+20,"#34312d");
+  p.rect(ox,oy-14,13,14,"#24221f");p.rect(ox-1,oy-15,15,2,"#34312d");p.rect(ox+3,oy-9,7,4,"#6a2a12");
+  for(let i=0;i<5;i++)p.dot(ox+4+i,oy-8+(i%2),i%2?"#e0802a":"#f0b050");
+  for(let y=oy-24;y<H;y++)for(let x=ox-14;x<W;x++)if(((x+y)&1)===0&&Math.hypot(x-ox-6,y-oy+7)<14)p.dot(x,y,"rgba(230,130,50,.07)");
+  // Plakat „Czujność“ (Wachsamkeit)
+  const px0=3,py0=Math.round(ws*.5);p.rect(px0,py0,14,20,"#b8ae8e");p.rect(px0+1,py0+1,12,9,"#7a2622");p.rect(px0+3,py0+3,8,1,"#d8d0b8");
+  p.rect(px0+5,py0+4,4,4,"#2a2a26");p.rect(px0+2,py0+12,10,1,"#2a2a26");p.rect(px0+2,py0+14,7,1,"#2a2a26");p.rect(px0+2,py0+16,9,1,"#4a4a44");
+  if(typeof xmasOn==="function"&&xmasOn()){
+    for(let x=0;x<W;x++){const y=3+Math.round(Math.abs(Math.sin(x/W*Math.PI*2))*4);p.dot(x,y,["#8a2a25","#b8a040","#3a6a3a"][Math.floor(x/3)%3])}
+  }
 }
 function drawClock(min){
   const cv=$("clockCanvas"),p=P(cv);p.g.clearRect(0,0,34,34);
@@ -496,6 +591,9 @@ function drawDeskLight(){
     else if(dd<1){if((x+y)%3===0)p.dot(x,y,"rgba(220,205,160,.04)")}
     else if(dd>1.5)p.dot(x,y,(x+y)&1?"rgba(0,0,0,.5)":"rgba(0,0,0,.36)");
     else if(dd>1.1&&((x+y)&1))p.dot(x,y,"rgba(0,0,0,.26)")}
+  if(typeof xmasOn==="function"&&xmasOn()){ // Opłatek auf Heu, oben rechts neben der Durchreiche
+    const ox=Math.round(W*.66),oy=4;for(let i=0;i<16;i++)p.line(ox-2+i,oy+9,ox+i,oy+12+(i%3),"rgba(190,170,100,.6)");
+    p.rect(ox,oy,14,9,"#e6e0cc");p.rect(ox,oy,14,1,"#f4f0e2");p.rect(ox+5,oy+3,4,3,"#d0c8b0");p.dot(ox+7,oy+2,"#d0c8b0")}
 }
 
 // ---------- Szene: draußen (Horizont richtet sich nach dem Auto) ----------
@@ -505,17 +603,19 @@ function drawOutBg(){
   const wrap=$("carWrap");
   if(wrap){const r=wrap.getBoundingClientRect();if(r.height>0)outHz=Math.round((r.top+r.height*.62)/PXS)}
   const hz=Math.max(20,Math.min(H-20,outHz||Math.round(H*.4)));
-  const key=W+"x"+H+"@"+hz; if(key===outKey) return; outKey=key;
+  const key=W+"x"+H+"@"+hz+"/"+(S.date?S.date.getMonth():0); if(key===outKey) return; outKey=key;
   cv.width=W;cv.height=H;const p=P(cv);
   drawSky(p,W,hz);
   drawBlocks(p,W,hz-5,rng(23),1.4);
   drawFog(p,W,hz-16,hz);
   drawGround(p,W,H,hz,[.12,.3,.6]);
   drawConcreteWall(p,W,hz+1,9);
+  const coldOut=S.date&&isColdMonth(S.date);
+  if(coldOut){snowCap(p,0,hz-10,W,2);for(let i=0;i<W*1.4;i++){const x=Math.round(Math.random()*W),y=hz+2+Math.round(Math.random()*(H-hz-2));p.dith(x,y,2+Math.round(Math.random()*8),1,"rgba(196,200,192,.35)")}}
   // Kontrollhütte aus Betonplatten mit trübem Fenster
   const hw=Math.round(W*.08);
   for(let y=hz-40;y<H;y++)for(let x=0;x<hw;x++)p.dot(x,y,x%9===0||(y-hz+40)%12===0?"#22241f":((x*3+y)%13===0?"#353731":"#3c3e38"));
-  p.rect(0,hz-43,hw+3,3,"#1a1b18");
+  p.rect(0,hz-43,hw+3,3,"#1a1b18");if(coldOut)snowCap(p,0,hz-45,hw+3,2);
   const wx=Math.max(2,Math.round(hw*.25));
   p.rect(wx,hz-28,10,8,"#8f7f4e");p.rect(wx+4,hz-28,1,8,"#2a2a24");p.rect(wx,hz-24,10,1,"#2a2a24");
   for(let y=hz;y<hz+30;y++)for(let x=hw;x<hw+30;x++)if(((x+y)&1)===0&&(x-hw)+(y-hz)*.6<28)p.dot(x,y,"rgba(160,140,86,.08)");

@@ -33,7 +33,7 @@ const CAR_COLORS=["#c8b26a","#8fa3b0","#a8423a","#6f8a5b","#d6d0c0","#3f5a7a","#
 const BAG_ITEMS=[["Bohnenkaffee","Pakete",1,3],["Wodka","Flaschen",1,2],["Zigaretten","Stangen",1,2],["Kleidung","Stück",2,8],
   ["Konserven","Dosen",1,6],["Bücher","Stück",1,3],["Schokolade","Tafeln",1,5]];
 const BAG_SPOTS=[["Kofferboden","panel","bar"],["Futter","panel","knife"],["Seitentasche","open"],["Kulturbeutel","open"]];
-const CABIN=[["Handschuhfach","open"],["Unter den Sitzen","dark"],["Rücksitzpolster","panel","knife"],["Türverkleidung","panel","screw"]];
+const CABIN=[["Handschuhfach","open"],["Unter den Sitzen","dark"],["Fahrersitz","panel","knife"],["Rücksitzpolster","panel","knife"],["Türverkleidung","panel","screw"]];
 const FRONT_ENGINE=[["Luftfilter","open"],["Hinter dem Kühler","dark"],["Batteriekasten","panel","screw"]];
 // Bereiche: [Name, Position auf dem Auto in %, Verstecke, Geste]
 const CAR_MODELS=[
@@ -131,13 +131,17 @@ function setModel(t,mi){
   t.car.year=Math.max(t.car.year,CAR_MODELS[mi].from);
   if(t.contraband&&t.contraband.spot.startsWith("c:")) placeContraband(t,t.contraband.item,"car");
 }
+// Polster und Sitze: beliebtestes Versteck (etwa jedes zweite Mal)
+function seatSpots(m){const out=[];m.areas.forEach((a,ai)=>a[2].forEach((s,si)=>{if(s[1]==="panel"&&/sitz|polster|bank/i.test(s[0]))out.push([ai,si])}));return out}
 function placeContraband(t,item,where){
   const m=CAR_MODELS[t.car.model];
   if(where==="bag"){const bi=rint(0,BAG_SPOTS.length-1);
     t.contraband={spot:"b:"+bi,item,desc:item+" (Gepäck, "+BAG_SPOTS[bi][0]+")",pos:randPos(),hint:Math.random()<.75};return}
   let ai,si;
   if(where&&where.startsWith("c:")){[ai,si]=where.slice(2).split(":").map(Number);if(!m.areas[ai]||!m.areas[ai][2][si]){ai=null}}
-  if(ai==null){ai=rint(0,m.areas.length-1);si=rint(0,m.areas[ai][2].length-1)}
+  if(ai==null){const seats=seatSpots(m);
+    if(seats.length&&Math.random()<.5)[ai,si]=pick(seats);
+    else{ai=rint(0,m.areas.length-1);si=rint(0,m.areas[ai][2].length-1)}}
   const sp=m.areas[ai][2];
   t.contraband={spot:`c:${ai}:${si}`,item,desc:item+" ("+sp[si][0]+")",pos:randPos(),hint:Math.random()<.75};
 }
@@ -199,10 +203,9 @@ function makeTraveler(date,wantedList,opts={}){
 
   if(!opts.clean&&Math.random()<.3){
     const r=Math.random(), m=CAR_MODELS[mi], item=pick(GOODS);
-    if(r<.5){
-      const ai=rint(0,m.areas.length-1), sp=m.areas[ai][2], si=rint(0,sp.length-1);
-      t.contraband={spot:`c:${ai}:${si}`,item,desc:item+" ("+sp[si][0]+")",pos:randPos(),hint:Math.random()<.75};
-    } else if(r<.75){
+    if(r<.55){
+      placeContraband(t,item,"car");
+    } else if(r<.78){
       const bi=rint(0,BAG_SPOTS.length-1);
       t.contraband={spot:"b:"+bi,item,desc:item+" (Gepäck, "+BAG_SPOTS[bi][0]+")",pos:randPos(),hint:Math.random()<.75};
     } else {

@@ -2,7 +2,7 @@
 const S={day:1,date:DAYS[0].date,min:DAY_START,correct:0,errors:0,money:60,cur:null,
   found:null,evidence:null,proven:[],mark:null,passSpread:0,sel:[],checkMode:false,z:10,busy:false,flipping:false,
   outArea:null,bagView:false,latches:[false,false],close:null,spotState:{},spotNote:{},pendingSeize:null,
-  asked:{},notedPlate:false,carURL:null,wantedList:[],
+  asked:{},notedPlate:false,carURL:null,wantedList:[],claims:[],confronted:{},confrontLog:[],confessed:false,
   rules:null,family:FAMILY_INIT(),warnings:0,flags:{},shift:null,orders:[],plan:{},ledger:null};
 
 function toast(msg,kind){
@@ -14,13 +14,13 @@ function updateHUD(){updateWall();updateLog()}
 
 // ---------- Tagesablauf ----------
 function resetGame(){Object.assign(S,{day:1,money:60,family:FAMILY_INIT(),warnings:0,flags:{}})}
-function loadGame(d){Object.assign(S,{day:d.day,money:d.money,family:d.family,warnings:d.warnings,flags:d.flags||{}})}
+function loadGame(d){Object.assign(S,{day:d.day,money:d.money,family:migrateFamily(d.family),warnings:d.warnings,flags:d.flags||{}})}
 function beginDay(){
   const d=today();
   S.date=d.date; S.rules=activeRules(d); S.min=DAY_START; S.correct=0; S.errors=0;
   S.shift={n:0,correct:0,errors:0,wrongArrests:0,orderHits:0,orderMiss:0,bribes:0,bribeMoney:0,sbObeyed:0,sbDefied:0,startMoney:S.money};
   document.querySelectorAll(".doc").forEach(e=>e.remove());
-  S.cur=null; drawWindowScene(null); $("speech").textContent=""; $("queue").textContent=""; setHint("");
+  S.cur=null; drawWindowScene(null); drawWall(); drawDeskLight(); $("speech").textContent=""; $("queue").textContent=""; setHint("");
   if(S.day===8&&(S.flags.sbObeyed||0)>=2&&!S.flags.bonusPaid){S.money+=80;S.flags.bonusPaid=true}
   updateWall();
   showNewspaper(S.day-1,()=>{startShift();nextTraveler()});
@@ -37,6 +37,7 @@ function finalizeTraveler(t){
   t.answers.claimOwner=t.flaw==="noAuth"?t.name:t.car.owner;
   if(t.deleg) t.deleg.name=t.name;
   t.exitDate=addDays(S.date,-rint(2,20));
+  t.temper=t.script==="smuggler1"||t.script==="smuggler2"||t.script==="smuggler3"?pick(["bribe","excuse"]):pick(["confess","excuse","excuse","angry","bribe"]);
   if(t.contraband&&!t.script){t.answers.nervous=t.answers.nervous||Math.random()<.5;if(Math.random()<.6)t.answers.declare="Nein, gar nichts."}
   return t;
 }
@@ -54,13 +55,13 @@ function nextTraveler(){
     if(t.flaw==="bannedCity"&&!today().banned.includes(t.city)) t.flaw=null;
     if(t.flaw==="modelMismatch"&&t.car.model===t.car.regModel) t.flaw=null}
   else t=makeTraveler(S.date,S.wantedList);
-  finalizeTraveler(t);
+  finalizeTraveler(t); t.queue=rint(2,9);
   Object.assign(S,{cur:t,found:null,evidence:null,proven:[],mark:null,passSpread:0,
     outArea:null,bagView:false,latches:[false,false],close:null,spotState:{},spotNote:{},pendingSeize:null,
-    asked:{},notedPlate:false,carURL:null,busy:false,flipping:false});
+    asked:{},notedPlate:false,carURL:null,busy:false,flipping:false,claims:[],confronted:{},confrontLog:[],confessed:false});
   drawWindowScene(t);
   $("speech").textContent="„"+t.line+"“";
-  $("queue").textContent="Wartende Autos: "+rint(2,9);
+  $("queue").textContent="Wartende Autos: "+t.queue;
   renderTravelerDocs(); updateHUD();
   setHint(S.day===1&&n===1
     ?"Person antippen: reden. Auto antippen: rausgehen. Rotstift: prüfen. Das Dalekopis sagt, worauf du heute achten sollst."
@@ -88,7 +89,7 @@ function judge(type){
   }
   const guilty=!!t.contraband||(!!f&&f.forgery);
   if(!guilty) return {ok:false,msg:"Unschuldig festgenommen! Beschwerde beim Kommandanten: −"+WRONG_ARREST+" zł.",penalty:WRONG_ARREST,wrongArrest:true};
-  const proof=S.found?"Fund: "+S.found+".":S.evidence?S.evidence.text:t.flaw==="ordered"?"Festnahme laut Dalekopis.":null;
+  const proof=S.found?"Fund: "+S.found+".":S.confessed?"Die Person hat gestanden.":S.evidence?S.evidence.text:t.flaw==="ordered"?"Festnahme laut Dalekopis.":null;
   return {ok:true,msg:"Die Milicja führt "+t.name+" ab. "+(proof||"Ohne Beweis – da hattest du Glück."),reward:proof?PAY.arrestProof:PAY.arrestNoProof};
 }
 function resolve(type){
@@ -168,11 +169,11 @@ function chapterEnd(){
 // ---------- Knöpfe ----------
 let deskReady=false;
 function startGame(load){
-  SFX.init();
+  SFX.init(); applySettings();
   $("startScreen").classList.remove("show"); $("gameOver").classList.remove("show");
   if(!deskReady){setupStamps();setupLens();deskReady=true}
-  if(load) loadGame(load); else{resetGame();saveGame()}
-  beginDay();
+  if(load){loadGame(load);beginDay()}
+  else{resetGame();saveGame();S.date=DAYS[0].date;playIntro(beginDay)}
 }
 $("bStart").onclick=()=>startGame(null);
 $("bContinue").onclick=()=>{const d=loadSave();if(d)startGame(d)};
@@ -186,17 +187,20 @@ $("bNextDay").onclick=()=>{
   if(S.day>=DAYS.length) return chapterEnd();
   tearCalendar(); S.day++; saveGame(); beginDay();
 };
-$("mute").onclick=()=>{SFX.setMuted(!SFX.isMuted());$("mute").textContent=SFX.isMuted()?"Ton aus":"Ton an"};
+$("bSettings1").onclick=$("bSettings2").onclick=()=>{SFX.init();applySettings();openSettings()};
+$("bHelp").onclick=()=>{$("help").hidden=!$("help").hidden};
+$("bIntroAgain").onclick=()=>{$("settings").classList.remove("show");SFX.init();playIntro(()=>{})};
 let resizeTimer=null;
 window.addEventListener("resize",()=>{
   clearTimeout(resizeTimer);
   resizeTimer=setTimeout(()=>{
     drawWindowScene(S.cur); drawWall(); drawDeskLight(); homeStamps(); homeLens();
+    if($("startScreen").classList.contains("show")) startTitle();
     if($("outside").classList.contains("show")) drawOutBg();
   },150);
 });
 
 initPixel();
 updateWall();
-$("mute").textContent=SFX.isMuted()?"Ton aus":"Ton an";
+applySettings(); startTitle();
 (()=>{const d=loadSave();if(d){$("bContinue").style.display="";$("bContinue").textContent=`Fortsetzen (${fmt(DAYS[d.day-1].date)})`}})();

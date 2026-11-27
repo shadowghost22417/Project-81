@@ -1,8 +1,8 @@
-# Grenzposten Zgorzelec 1981
+# Zgorzelec 1981
 
 Ein Browserspiel in Pixel-Optik: Du bist Grenzbeamter am Übergang Zgorzelec–Görlitz während des Kriegsrechts in Polen (1981–1983).
 Du prüfst Papiere, durchsuchst Autos und Gepäck und entscheidest: durchlassen, abweisen oder festnehmen.
-Von deinem Lohn müssen Ewa, Kasia und Tomek satt und warm werden.
+Von deinem Lohn müssen Ewa, Tosia und Paweł satt und warm werden.
 
 **Spielen:** https://shadowghost22417.github.io/Project-81/
 
@@ -14,6 +14,8 @@ Von deinem Lohn müssen Ewa, Kasia und Tomek satt und warm werden.
 - **Handschellen:** auf die Person ziehen, um sie festzunehmen.
 - **Teczka:** Dienstanweisung, Dalekopis (Anweisungen des Tages), Fahndungsliste, Fahrzeugtypen und Dienstbuch.
 - **Umschlag:** auf die Teczka ziehen = Bestechung annehmen, in die Durchreiche = zurückgeben.
+- **Vorhalten:** Nach einem eingekreisten Widerspruch oder einem Fund kannst du ihn der Person im Gespräch vorhalten. Ein Geständnis zählt als Beweis.
+- **Einstellungen (Zahnrad):** Ton, Lautstärken, Weihnachtsdeko, Übersetzungen.
 
 ## Kapitel 1: Kriegsrecht
 Zehn Schichten vom 14.12.1981 bis zum 22.07.1983. Jeden Morgen gibt es eine Zeitung mit echten Ereignissen jener Zeit,
@@ -31,6 +33,9 @@ Der Spielstand wird im Browser gespeichert.
 | `pixel.js` | Alle Grafiken, im Code gezeichnet |
 | `audio.js` | Alle Geräusche, im Code erzeugt |
 | `documents.js`, `hut.js`, `interrogation.js`, `car.js`, `tools.js` | Spielmechaniken in der Hütte und draußen |
-| `family.js`, `newspaper.js`, `save.js`, `game.js` | Abrechnung, Zeitung, Speichern, Spielablauf |
+| `interior.js` | Gezeichnete Innenansichten beim Durchsuchen |
+| `photos.js` | Pressefotos der Zeitung (eigene Pixel-Zeichnungen) |
+| `family.js`, `newspaper.js`, `save.js`, `game.js` | Abrechnung mit Familienszene, Zeitung, Speichern, Spielablauf |
+| `title.js`, `intro.js`, `settings.js` | Startbildschirm, Fernsehansprache vom 13.12.1981, Einstellungen |
 
 Bei jedem Update wird die Versionsnummer in `index.html` (`?v=…`) erhöht, damit Browser die neuen Dateien laden.

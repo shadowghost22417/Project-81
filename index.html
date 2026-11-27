@@ -6,11 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Grenzposten Zgorzelec 1981</title>
+<title>Zgorzelec 1981</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -30,7 +30,7 @@
       <canvas id="clockCanvas" class="px" width="34" height="34"></canvas>
       <div id="calendar" data-k="date"><div id="calMonth"></div><div id="calDay"></div><div id="calYear"></div></div>
       <div id="note"></div>
-      <button id="mute" class="door">Ton an</button>
+      <button id="bSettings2" class="door" aria-label="Einstellungen" title="Einstellungen">⚙</button>
     </div>
   </div>
   <div id="desk">
@@ -48,16 +48,46 @@
 
 <div id="toast"></div>
 
-<div class="overlay show" id="startScreen">
-  <h2>Grenzübergang Zgorzelec</h2>
-  <p>Dezember 1981. Seit gestern gilt das Kriegsrecht. Du sitzt in der Kontrollhütte an der Grenze zur DDR.
-  Prüfe Papiere, Autos und Gepäck. Zu Hause warten Ewa, Kasia und Tomek darauf, dass dein Lohn für Essen und Kohle reicht.</p>
-  <p class="soft">Tippe die Person an, um mit ihr zu reden, und das Auto, um hinauszugehen. Das Kennzeichen liest du draußen ab,
-  das Modell bestimmst du mit den Fahrzeugtypen aus der Teczka. Mit dem Rotstift kreist du Widersprüche ein,
-  die Handschellen ziehst du auf die Person. Das Dalekopis sagt dir, worauf du heute besonders achten sollst.</p>
-  <div class="btns"><button class="big" id="bContinue" style="display:none">Fortsetzen</button>
-  <button class="big" id="bStart">Neues Spiel</button></div>
-  <p class="soft version">Version 3 · Kapitel 1: Kriegsrecht</p>
+<div class="overlay show title" id="startScreen">
+  <canvas id="titleCanvas" class="px"></canvas>
+  <canvas id="titleSnowCanvas" class="px"></canvas>
+  <div class="titleBox">
+    <h1 class="gameTitle">Zgorzelec 1981</h1>
+    <p class="subtitle">Grenzübergang · Kapitel 1: Kriegsrecht</p>
+    <div class="menu">
+      <button class="big" id="bContinue" style="display:none">Fortsetzen</button>
+      <button class="big" id="bStart">Neues Spiel</button>
+      <button class="big alt" id="bSettings1">Einstellungen</button>
+      <button class="big alt" id="bHelp">Anleitung</button>
+    </div>
+    <div class="help" id="help" hidden>
+      <p>Dezember 1981. Seit gestern gilt das Kriegsrecht. Du sitzt in der Kontrollhütte an der Grenze zur DDR.
+      Zu Hause warten Ewa, Tosia und Paweł darauf, dass dein Lohn für Essen und Kohle reicht.</p>
+      <p>Tippe die Person an, um mit ihr zu reden, und das Auto, um hinauszugehen. Mit dem Rotstift kreist du Widersprüche ein
+      und kannst sie der Person danach vorhalten. Stempel in den Pass, Pass in die Durchreiche. Die Handschellen ziehst du auf die Person.
+      Das Dalekopis sagt dir, worauf du heute besonders achten sollst.</p>
+    </div>
+    <p class="version">Version 4</p>
+  </div>
+</div>
+
+<div class="overlay" id="settings">
+  <h2>Einstellungen</h2>
+  <div class="setlist">
+    <label class="setrow"><span>Ton</span><input type="checkbox" id="setSound"></label>
+    <label class="setrow"><span>Effekte</span><input type="range" id="setSfx" min="0" max="100"></label>
+    <label class="setrow"><span>Atmosphäre (Wind, Brummen, Uhr)</span><input type="range" id="setAmb" min="0" max="100"></label>
+    <label class="setrow"><span>Weihnachtsdeko</span><select id="setXmas"><option value="auto">Automatisch (Dezember)</option><option value="on">Immer an</option><option value="off">Aus</option></select></label>
+    <label class="setrow"><span>Übersetzungen auf Dokumenten</span><select id="setTr"><option value="first">Nur am ersten Tag</option><option value="always">Immer</option></select></label>
+  </div>
+  <div class="btns"><button class="big alt" id="bIntroAgain">Intro ansehen</button><button class="big" id="bSettingsClose">Fertig</button></div>
+</div>
+
+<div class="overlay" id="intro">
+  <div class="tv"><canvas id="tvCanvas" class="px"></canvas></div>
+  <div class="tvsub" id="tvSub"></div>
+  <p class="tvcap">Gen. Wojciech Jaruzelski, Ministerpräsident und Vorsitzender des Militärrats WRON · 13. Dezember 1981, 6 Uhr</p>
+  <div class="btns"><button class="door" id="bSkip">Überspringen</button></div>
 </div>
 
 <div class="overlay outside" id="outside">
@@ -86,6 +116,7 @@
 
 <div class="overlay" id="dayEnd">
   <h2>Sperrstunde</h2>
+  <canvas id="homeCanvas" class="px"></canvas>
   <div id="ledger"></div>
   <button class="big" id="bNextDay">Einkaufen und schlafen</button>
 </div>
@@ -101,19 +132,24 @@
   <div class="btns"><button class="big" id="bRetry">Tag wiederholen</button><button class="big" id="bNewGame">Neues Spiel</button></div>
 </div>
 
-<script src="data.js?v=3"></script>
-<script src="rules.js?v=3"></script>
-<script src="story.js?v=3"></script>
-<script src="pixel.js?v=3"></script>
-<script src="audio.js?v=3"></script>
-<script src="documents.js?v=3"></script>
-<script src="hut.js?v=3"></script>
-<script src="car.js?v=3"></script>
-<script src="tools.js?v=3"></script>
-<script src="interrogation.js?v=3"></script>
-<script src="family.js?v=3"></script>
-<script src="newspaper.js?v=3"></script>
-<script src="save.js?v=3"></script>
-<script src="game.js?v=3"></script>
+<script src="data.js?v=4"></script>
+<script src="rules.js?v=4"></script>
+<script src="story.js?v=4"></script>
+<script src="pixel.js?v=4"></script>
+<script src="audio.js?v=4"></script>
+<script src="settings.js?v=4"></script>
+<script src="documents.js?v=4"></script>
+<script src="hut.js?v=4"></script>
+<script src="car.js?v=4"></script>
+<script src="interior.js?v=4"></script>
+<script src="tools.js?v=4"></script>
+<script src="interrogation.js?v=4"></script>
+<script src="family.js?v=4"></script>
+<script src="photos.js?v=4"></script>
+<script src="newspaper.js?v=4"></script>
+<script src="save.js?v=4"></script>
+<script src="intro.js?v=4"></script>
+<script src="title.js?v=4"></script>
+<script src="game.js?v=4"></script>
 </body>
 </html>
