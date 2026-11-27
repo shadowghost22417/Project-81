@@ -38,4 +38,8 @@ Der Spielstand wird im Browser gespeichert.
 | `family.js`, `newspaper.js`, `save.js`, `game.js` | Abrechnung mit Familienszene, Zeitung, Speichern, Spielablauf |
 | `title.js`, `intro.js`, `settings.js` | Startbildschirm, Fernsehansprache vom 13.12.1981, Einstellungen |
 
-Bei jedem Update wird die Versionsnummer in `index.html` (`?v=…`) erhöht, damit Browser die neuen Dateien laden.
+quellen:
+https://www.rmf24.pl/fakty/polska/news-archiwalne-nagranie-gen-jaruzelski-oglasza-wprowadzenie-stan,nId,1431821
+https://teatrnn.pl/wydarzenia/wydarzenie/przemowienie-generala-wojciecha-jaruzelskiego/
+https://dzieje.pl/aktualnosci/gen-jaruzelski-o-stanie-wojennym
+https://wydarzenia.interia.pl/historia/news-wojna-polsko-jaruzelska,nId,7873361
