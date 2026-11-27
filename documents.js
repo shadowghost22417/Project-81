@@ -1,7 +1,7 @@
 // Dokumente, Pass, Stempel, Lupe und Rotstift
 
 const PAGE_W=196, ZOOM=2.2;
-const T=(pl,de)=>pl+(S.day===1?`<span class="tr">${de}</span>`:"");
+const T=(pl,de)=>pl+(S.day===1||SET.tr==="always"?`<span class="tr">${de}</span>`:"");
 const photoHTML=(face,key)=>`<div class="photo f" data-k="${key}"><img class="px" src="${facePhoto(face)}" alt=""></div>`;
 
 // ---------- Ziehen auf dem Tisch ----------
@@ -93,8 +93,7 @@ function renderTravelerDocs(){
     <div class="sign">${c.owner.split(" ")[1]}</div>`,0.62,150));
   layoutDocs(row);
 
-  if(t.bribe) placeDoc("env",`<h3>${T("Koperta","Umschlag")}</h3><div class="envbody">Dick. Ohne Aufschrift.</div>
-    <small>Auf die Teczka ziehen: einstecken.<br>In die Durchreiche: zurückgeben.</small>`,0.48,$("desk").clientHeight-150,onEnvDrop);
+  if(t.bribe) placeEnvelope(t);
 
   const pass=placeDoc("pass","",0.3,Math.max(120,$("desk").clientHeight-240),onPassDrop,".ptop");
   pass.id="passport"; renderPass();
@@ -104,6 +103,11 @@ function renderTravelerDocs(){
     const up=ev=>{window.removeEventListener("pointerup",up);const dx=ev.clientX-x0;if(Math.abs(dx)>35)flipPass(dx<0?1:-1)};
     window.addEventListener("pointerup",up);
   });
+}
+
+function placeEnvelope(t){
+  return placeDoc("env",`<h3>${T("Koperta","Umschlag")}</h3><div class="envbody">Dick. Ohne Aufschrift.</div>
+    <small>Auf die Teczka ziehen: einstecken.<br>In die Durchreiche: zurückgeben.</small>`,0.48,$("desk").clientHeight-150,onEnvDrop);
 }
 
 // ---------- Pass ----------
@@ -294,6 +298,7 @@ document.addEventListener("click",e=>{
     toast("Unstimmigkeit: "+res.text,"bad");
     S.sel.forEach(x=>{if(!S.proven.includes(x))S.proven.push(x)});
     if(res.forgery) S.evidence=res;
+    if(!S.claims.some(c=>c.text===res.text)){S.claims.push(res);if($("askMenu").classList.contains("show"))renderAskMenu()}
   }
   setTimeout(()=>{S.sel=[];markSelected()},900);
 });

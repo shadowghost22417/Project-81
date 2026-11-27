@@ -42,11 +42,11 @@ function renderPanelOut(){
   if(S.close){if(!S.close.built) renderCloseup(p);return}
   if(S.bagView){
     const decl=t.bag.filter(i=>i.declared).map(i=>`${i.name}: ${i.declared} ${i.unit}`).join("<br>")||"keine Waren";
-    p.innerHTML=`<div class="bagWrap"><div class="tiles">${t.bag.map(itemTile).join("")}${
-      BAG_SPOTS.map((s,i)=>spotTile("b:"+i,s)).join("")}</div><div class="declCopy"><b>Deklaracja celna</b><br>${decl}</div></div>`;
+    p.innerHTML=`<div class="bagWrap"><div>${interiorHTML("bag",BAG_SPOTS.map((s,i)=>["b:"+i,s]),"Koffer")}
+      <div class="tiles goods">${t.bag.map(itemTile).join("")}</div></div><div class="declCopy"><b>Deklaracja celna</b><br>${decl}</div></div>`;
   } else if(S.outArea!==null){
     const a=m.areas[S.outArea];
-    p.innerHTML=`<div class="compTitle">${a[0]}</div><div class="tiles">${a[2].map((s,i)=>spotTile(`c:${S.outArea}:${i}`,s)).join("")}</div>`;
+    p.innerHTML=interiorHTML(AREA_TYPE(a[0]),a[2].map((s,i)=>[`c:${S.outArea}:${i}`,s]),a[0]);
   } else p.innerHTML=`<p class="empty">Öffne ein leuchtendes Teil des Autos oder den Koffer.</p>`;
 }
 
